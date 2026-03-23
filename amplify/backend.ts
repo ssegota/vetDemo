@@ -1,0 +1,23 @@
+import { defineBackend } from '@aws-amplify/backend';
+import { auth } from './auth/resource';
+import { generateReport } from './functions/generate-report/resource';
+import { PolicyStatement, Effect } from 'aws-cdk-lib/aws-iam';
+import { Function } from 'aws-cdk-lib/aws-lambda';
+
+/**
+ * @see https://docs.amplify.aws/react/build-a-backend/ to add storage, functions, and more
+ */
+const backend = defineBackend({
+  auth,
+  generateReport
+});
+
+const generateReportFn = backend.generateReport.resources.lambda as Function;
+
+generateReportFn.addToRolePolicy(
+  new PolicyStatement({
+    effect: Effect.ALLOW,
+    actions: ['bedrock:InvokeModel'],
+    resources: ['arn:aws:bedrock:us-east-1::foundation-model/anthropic.claude-3-sonnet-20240229-v1:0'],
+  })
+);

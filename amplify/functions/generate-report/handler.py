@@ -44,7 +44,7 @@ Please generate a professional, narrative veterinary report that follows the sty
 """
 
         # 4. Prepare Bedrock request
-        model_id = 'us.anthropic.claude-3-5-sonnet-20241022-v2:0'
+        model_id = 'us.anthropic.claude-3-haiku-20240307-v1:0'
         
         request_body = json.dumps({
             "anthropic_version": "bedrock-2023-05-31",
@@ -60,7 +60,9 @@ Please generate a professional, narrative veterinary report that follows the sty
         # 5. Call Bedrock
         response = bedrock.invoke_model(
             modelId=model_id,
-            body=request_body
+            body=request_body,
+            contentType='application/json',
+            accept='application/json'
         )
 
         # 6. Parse response

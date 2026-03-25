@@ -2,6 +2,12 @@ import { type ClientSchema, a, defineData } from '@aws-amplify/backend';
 import { generateReport } from '../functions/generate-report/resource';
 
 const schema = a.schema({
+  DummyModel: a
+    .model({
+      name: a.string(),
+    })
+    .authorization(allow => [allow.publicApiKey(), allow.authenticated()]),
+
   generateReport: a
     .mutation()
     .arguments({
@@ -18,5 +24,8 @@ export const data = defineData({
   schema,
   authorizationModes: {
     defaultAuthorizationMode: 'userPool',
+    apiKeyAuthorizationMode: {
+      expiresInDays: 30,
+    },
   },
 });

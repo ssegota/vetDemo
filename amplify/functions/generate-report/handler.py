@@ -3,7 +3,7 @@ import boto3
 import os
 
 # Initialize Bedrock client
-bedrock = boto3.client(service_name='bedrock-runtime', region_name='eu-north-1')
+bedrock = boto3.client(service_name='bedrock-runtime', region_name='us-east-1')
 
 def lambda_handler(event, context):
     try:
@@ -44,7 +44,7 @@ Please generate a professional, narrative veterinary report that follows the sty
 """
 
         # 4. Prepare Bedrock request
-        model_id = 'eu.anthropic.claude-sonnet-4-6'
+        model_id = 'anthropic.claude-3-5-sonnet-20241022-v2:0'
         
         request_body = json.dumps({
             "anthropic_version": "bedrock-2023-05-31",

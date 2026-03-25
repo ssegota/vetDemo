@@ -20,6 +20,6 @@ generateReportFn.addToRolePolicy(
   new PolicyStatement({
     effect: Effect.ALLOW,
     actions: ['bedrock:InvokeModel'],
-    resources: ['arn:aws:bedrock:us-east-1::foundation-model/anthropic.claude-3-sonnet-20240229-v1:0'],
+    resources: ['arn:aws:bedrock:eu-north-1::foundation-model/anthropic.claude-sonnet-4-6'],
   })
 );

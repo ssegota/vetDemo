@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { Amplify } from 'aws-amplify';
+import { generateClient } from 'aws-amplify/data';
 import { Authenticator } from '@aws-amplify/ui-react';
 import '@aws-amplify/ui-react/styles.css';
 import outputs from '../amplify_outputs.json';
 import './index.css';
 
 Amplify.configure(outputs);
+const client = generateClient();
 
 function GeneratorContent({ signOut, user }) {
   const [keywords, setKeywords] = useState(['', '', '']);
@@ -24,31 +26,24 @@ function GeneratorContent({ signOut, user }) {
 
   const generateReport = async () => {
     setLoading(true);
+    setReport('');
     try {
-      // In Gen 2, if you want to call a function directly, you usually use a specific endpoint 
-      // or a GraphQL mutation that triggers the function. 
-      // For this implementation, I am preparing the code for the Lambda trigger.
-      
-      const response = await fetch('/api/generate', { // Mocking the endpoint path
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ keywords }),
+      // Call the Gen 2 mutation
+      const { data, errors } = await client.mutations.generateReport({
+        keywords: keywords.filter(k => k.trim() !== '')
       });
 
-      const data = await response.json();
-      setReport(data.report || "Error generating report.");
-      setLoading(false);
-      
+      if (errors) {
+        console.error('GraphQL errors:', errors);
+        setReport("Error: " + errors[0].message);
+      } else {
+        setReport(data || "No report generated.");
+      }
     } catch (error) {
-      console.error('Error generating report:', error);
-      // Fallback mock for demonstration if the API is not yet live
-      setTimeout(() => {
-        const mockReport = `VETERINARY NARRATIVE REPORT\n\nGenerated for: ${user.username}\nKeywords: ${keywords.join(', ')}\n\nBased on your keywords, the narrative suggests a clinical observation consistent with the examples in the database. Further diagnostic tests are recommended.`;
-        setReport(mockReport);
-        setLoading(false);
-      }, 2000);
+      console.error('Error calling generateReport:', error);
+      setReport("Error: " + (error.message || "Unknown error"));
+    } finally {
+      setLoading(false);
     }
   };
 

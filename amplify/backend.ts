@@ -1,5 +1,6 @@
 import { defineBackend } from '@aws-amplify/backend';
 import { auth } from './auth/resource';
+import { data } from './data/resource';
 import { generateReport } from './functions/generate-report/resource';
 import { PolicyStatement, Effect } from 'aws-cdk-lib/aws-iam';
 import { Function } from 'aws-cdk-lib/aws-lambda';
@@ -9,6 +10,7 @@ import { Function } from 'aws-cdk-lib/aws-lambda';
  */
 const backend = defineBackend({
   auth,
+  data,
   generateReport
 });
 

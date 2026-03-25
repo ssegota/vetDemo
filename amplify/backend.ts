@@ -22,7 +22,7 @@ generateReportFn.addToRolePolicy(
     actions: ['bedrock:InvokeModel'],
     resources: [
       'arn:aws:bedrock:eu-north-1:554095889481:inference-profile/eu.anthropic.claude-sonnet-4-6',
-      'arn:aws:bedrock:eu-north-1::foundation-model/anthropic.claude-sonnet-4-6'
+      'arn:aws:bedrock:*::foundation-model/anthropic.claude-sonnet-4-6'
     ],
   })
 );

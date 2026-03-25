@@ -44,7 +44,7 @@ Please generate a professional, narrative veterinary report that follows the sty
 """
 
         # 4. Prepare Bedrock request
-        model_id = 'anthropic.claude-sonnet-4-6'
+        model_id = 'eu.anthropic.claude-sonnet-4-6'
         
         request_body = json.dumps({
             "anthropic_version": "bedrock-2023-05-31",

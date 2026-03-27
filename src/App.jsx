@@ -168,14 +168,25 @@ function GeneratorContent({ signOut, user }) {
       
       const opt = {
         margin:       15,
-        filename:     `vet-report-${Date.now()}.pdf`,
+        filename:     `diagnostic_report.pdf`,
         image:        { type: 'jpeg', quality: 1.0 },
         html2canvas:  { scale: 2, useCORS: true },
         jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
       };
       
-      await html2pdf().set(opt).from(tempDiv).save();
+      const pdfBlob = await html2pdf().set(opt).from(tempDiv).output('blob');
       
+      // Use native browser download for better compatibility and reliable file extensions
+      const blobUrl = URL.createObjectURL(pdfBlob);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = 'diagnostic_report.pdf';
+      document.body.appendChild(link);
+      link.click();
+      
+      // Cleanup
+      document.body.removeChild(link);
+      URL.revokeObjectURL(blobUrl);
       document.body.removeChild(tempDiv);
     } catch (error) {
       console.error('Error generating PDF:', error);

@@ -69,21 +69,8 @@ Please generate a professional, narrative veterinary report that follows the sty
         response_body = json.loads(response.get('body').read())
         generated_report = response_body['content'][0]['text']
 
-        return {
-            'statusCode': 200,
-            'headers': {
-                'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Headers': 'Content-Type',
-                'Access-Control-Allow-Methods': 'OPTIONS,POST'
-            },
-            'body': json.dumps({
-                'report': generated_report
-            })
-        }
+        return generated_report
 
     except Exception as e:
         print(f"Error: {str(e)}")
-        return {
-            'statusCode': 500,
-            'body': json.dumps({'error': str(e)})
-        }
+        raise e

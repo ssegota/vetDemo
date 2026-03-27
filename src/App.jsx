@@ -297,6 +297,14 @@ function GeneratorContent({ signOut, user }) {
     }
   };
 
+  const resetForm = () => {
+    setDetails('');
+    setKeywords(['', '', '']);
+    setReport('');
+    setShowHistory(false);
+    setShowProfile(false);
+  };
+
   const loadFromHistory = (item) => {
     setDetails(item.details || '');
     setKeywords(item.keywords || []);
@@ -439,9 +447,13 @@ function GeneratorContent({ signOut, user }) {
   return (
     <div className="app-container">
       <header>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        <div 
+          style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', cursor: 'pointer' }}
+          onClick={resetForm}
+          title={lang === 'en' ? 'New Diagnosis' : 'Novi nalaz'}
+        >
           <Stethoscope size={32} color="var(--primary)" />
-          <h1 className="hide-mobile" style={{ fontSize: '1.25rem' }}>{t('app_title')}</h1>
+          <h1 className="hide-mobile" style={{ fontSize: '1.25rem' }}>dAIgnostics Studio VetNarrative</h1>
         </div>
         
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
@@ -625,8 +637,7 @@ export default function App() {
       return (
         <div style={{ textAlign: 'center', padding: '1.5rem', color: 'var(--primary)' }}>
           <Stethoscope size={56} style={{ marginBottom: '0.75rem' }} />
-          <h2 style={{ margin: 0, fontWeight: 800, letterSpacing: '-0.025em' }}>dAIgnostics Studio</h2>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', fontWeight: 500 }}>VetNarrative Diagnostic Toolkit</p>
+          <h2 style={{ margin: 0, fontWeight: 800, letterSpacing: '-0.025em' }}>dAIgnostics Studio VetNarrative</h2>
         </div>
       );
     },

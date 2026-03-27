@@ -15,7 +15,6 @@ import {
   Clock,
   FileText
 } from 'lucide-react';
-import { jsPDF } from 'jspdf';
 import '@aws-amplify/ui-react/styles.css';
 import outputs from '../amplify_outputs.json';
 import './index.css';
@@ -115,64 +114,72 @@ function GeneratorContent({ signOut, user }) {
     }
   };
 
-  const downloadPDF = () => {
+  const downloadPDF = async () => {
     try {
-      const doc = new jsPDF();
+      // Dynamic import to avoid missing window globals during build
+      const html2pdf = (await import('html2pdf.js')).default;
+
+      const tempDiv = document.createElement('div');
+      tempDiv.style.padding = '20px';
+      tempDiv.style.fontFamily = 'Inter, sans-serif';
+      tempDiv.style.color = '#0f172a';
+      tempDiv.style.lineHeight = '1.6';
+      
       const date = new Date().toLocaleDateString();
+      const doctor = user?.signInDetails?.loginId || 'N/A';
       
-      // Header
-      doc.setFontSize(22);
-      doc.setTextColor(37, 99, 235);
-      doc.text('dAIgnostics Studio VetNarrative', 20, 20);
+      let htmlContent = `
+        <h2 style="color: #2563eb; margin-bottom: 5px;">dAIgnostics Studio VetNarrative</h2>
+        <p style="color: #64748b; font-size: 13px; margin-top: 0; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px;">
+          Generated on ${date} | Doctor: ${doctor}
+        </p>
+      `;
       
-      doc.setFontSize(10);
-      doc.setTextColor(100, 116, 139);
-      doc.text(`Generated on ${date} | Doctor: ${user?.signInDetails?.loginId || 'N/A'}`, 20, 28);
-      
-      doc.setDrawColor(226, 232, 240);
-      doc.line(20, 32, 190, 32);
-      
-      // Clinical Details
       if (details) {
-        doc.setFontSize(14);
-        doc.setTextColor(15, 23, 42);
-        doc.text('Clinical Details:', 20, 42);
-        doc.setFontSize(11);
-        doc.setTextColor(71, 85, 105);
-        const splitDetails = doc.splitTextToSize(details, 170);
-        doc.text(splitDetails, 20, 48);
+        htmlContent += `
+          <h3 style="margin-top: 20px; margin-bottom: 5px;">Clinical Details:</h3>
+          <p style="margin-top: 0; color: #475569;">${details.replace(/\n/g, '<br>')}</p>
+        `;
       }
       
-      const startY = details ? 55 + (doc.splitTextToSize(details, 170).length * 5) : 42;
-
-      // Keywords
-      doc.setFontSize(14);
-      doc.setTextColor(15, 23, 42);
-      doc.text('Observations:', 20, startY);
-      doc.setFontSize(11);
-      doc.setTextColor(71, 85, 105);
-      doc.text(keywords.filter(k => k.trim() !== '').join(', '), 20, startY + 7);
+      const activeKeywords = keywords.filter(k => k.trim() !== '').join(', ');
+      if (activeKeywords) {
+        htmlContent += `
+          <h3 style="margin-top: 20px; margin-bottom: 5px;">Observations:</h3>
+          <p style="margin-top: 0; color: #475569;">${activeKeywords}</p>
+        `;
+      }
       
-      // Narrative Report
-      doc.setFontSize(14);
-      doc.setTextColor(15, 23, 42);
-      doc.text('Narrative Report:', 20, startY + 20);
-      doc.setFontSize(11);
-      doc.setTextColor(30, 41, 59);
+      htmlContent += `
+        <h3 style="margin-top: 20px; margin-bottom: 5px;">Narrative Report:</h3>
+        <p style="margin-top: 0; color: #1e293b; white-space: pre-wrap;">${report}</p>
+        
+        <div style="margin-top: 40px; font-size: 11px; color: #94a3b8; text-align: center;">
+          Confidential Veterinary Report - dAIgnostics Studio VetNarrative
+        </div>
+      `;
       
-      const splitText = doc.splitTextToSize(report, 170);
-      doc.text(splitText, 20, startY + 27);
+      tempDiv.innerHTML = htmlContent;
+      // Temporarily append to body (off-screen) so html2canvas can measure it
+      tempDiv.style.position = 'absolute';
+      tempDiv.style.top = '-9999px';
+      tempDiv.style.width = '700px'; 
+      document.body.appendChild(tempDiv);
       
-      // Footer
-      const pageHeight = doc.internal.pageSize.height;
-      doc.setFontSize(8);
-      doc.setTextColor(148, 163, 184);
-      doc.text('Confidential Veterinary Report - dAIgnostics Studio VetNarrative', 20, pageHeight - 10);
+      const opt = {
+        margin:       15,
+        filename:     `vet-report-${Date.now()}.pdf`,
+        image:        { type: 'jpeg', quality: 1.0 },
+        html2canvas:  { scale: 2, useCORS: true },
+        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      };
       
-      doc.save(`vet-report-${Date.now()}.pdf`);
+      await html2pdf().set(opt).from(tempDiv).save();
+      
+      document.body.removeChild(tempDiv);
     } catch (error) {
       console.error('Error generating PDF:', error);
-      alert('Failed to generate PDF. Please check the console for details.');
+      alert('Failed to generate PDF. Check console for details.');
     }
   };
 

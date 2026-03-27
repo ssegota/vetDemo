@@ -9,7 +9,7 @@ import { Function } from 'aws-cdk-lib/aws-lambda';
  * @see https://docs.amplify.aws/react/build-a-backend/ to add storage, functions, and more
  */
 const backend = defineBackend({
-  // auth,
+  auth,
   data,
   generateReport
 });

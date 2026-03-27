@@ -56,26 +56,13 @@ function GeneratorContent({ signOut, user }) {
 
   const loadProfile = async () => {
     try {
-      const { data: profiles } = await client.models.UserProfile.list();
-      let profile = profiles[0];
-      
-      if (!profile) {
-        // Create initial profile if it doesn't exist
-        const { data: newProfile } = await client.models.UserProfile.create({
-          firstName: '',
-          lastName: ''
-        });
-        profile = newProfile;
-      }
-      
+      const attrs = await fetchUserAttributes();
       setUserProfile({
-        id: profile.id,
-        firstName: profile.firstName || '',
-        lastName: profile.lastName || ''
+        firstName: attrs.given_name || '',
+        lastName: attrs.family_name || ''
       });
     } catch (e) {
-      console.warn('Error fetching profile model:', e);
-      setUserProfile({ firstName: '', lastName: '' });
+      console.error('Error fetching user attributes:', e);
     }
   };
 
@@ -333,10 +320,11 @@ function GeneratorContent({ signOut, user }) {
       e.preventDefault();
       setSavingProfile(true);
       try {
-        await client.models.UserProfile.update({
-          id: userProfile.id,
-          firstName: editingProfile.firstName,
-          lastName: editingProfile.lastName
+        await updateUserAttributes({
+          userAttributes: {
+            given_name: editingProfile.firstName,
+            family_name: editingProfile.lastName
+          }
         });
         await loadProfile();
         alert(t('profile_update_success'));
@@ -628,8 +616,20 @@ export default function App() {
   const formFields = {
     signUp: {
       email: { order: 1 },
-      password: { order: 2 },
-      confirm_password: { order: 3 }
+      given_name: { 
+        label: 'First Name', 
+        placeholder: 'Enter your first name', 
+        required: true,
+        order: 2 
+      },
+      family_name: { 
+        label: 'Last Name', 
+        placeholder: 'Enter your last name', 
+        required: true,
+        order: 3 
+      },
+      password: { order: 4 },
+      confirm_password: { order: 5 }
     }
   };
 

@@ -16,13 +16,6 @@ const schema = a.schema({
     })
     .authorization(allow => [allow.owner()]),
   
-  UserProfile: a
-    .model({
-      firstName: a.string(),
-      lastName: a.string(),
-    })
-    .authorization(allow => [allow.owner()]),
-
   generateReport: a
     .mutation()
     .arguments({

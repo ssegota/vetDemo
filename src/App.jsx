@@ -452,20 +452,13 @@ function GeneratorContent({ signOut, user }) {
           onClick={resetForm}
           title={lang === 'en' ? 'New Diagnosis' : 'Novi nalaz'}
         >
-          <Stethoscope size={32} color="var(--primary)" />
+          <Stethoscope size={32} color="var(--brand-red)" />
           <h1 className="hide-mobile" style={{ fontSize: '1.25rem' }}>dAIgnostics Studio VetNarrative</h1>
         </div>
         
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <div className="lang-toggle">
-            <button className={`lang-btn ${lang === 'en' ? 'active' : ''}`} onClick={() => setLang('en')}>EN</button>
-            <button className={`lang-btn ${lang === 'hr' ? 'active' : ''}`} onClick={() => setLang('hr')}>HR</button>
-          </div>
+        <div style={{ flex: 1 }}></div>
 
-          <button onClick={() => setShowHistory(true)} className="btn btn-ghost" title={t('history')}>
-            <History size={20} /> <span className="hide-mobile">{t('history')}</span>
-          </button>
-          
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
           <div className="user-pill" onClick={() => setShowProfile(true)}>
             <User size={18} />
             <span className="hide-mobile" style={{ maxWidth: '150px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -473,6 +466,15 @@ function GeneratorContent({ signOut, user }) {
                 ? `${userProfile.firstName} ${userProfile.lastName}` 
                 : user?.signInDetails?.loginId}
             </span>
+          </div>
+
+          <button onClick={() => setShowHistory(true)} className="btn btn-ghost" title={t('history')}>
+            <History size={20} />
+          </button>
+          
+          <div className="lang-toggle" style={{ margin: 0 }}>
+            <button className={`lang-btn ${lang === 'en' ? 'active' : ''}`} onClick={() => setLang('en')}>EN</button>
+            <button className={`lang-btn ${lang === 'hr' ? 'active' : ''}`} onClick={() => setLang('hr')}>HR</button>
           </div>
 
           <button onClick={signOut} className="btn btn-ghost" title={t('sign_out')}>
@@ -635,9 +637,9 @@ export default function App() {
   const components = {
     Header() {
       return (
-        <div style={{ textAlign: 'center', padding: '1.5rem', color: 'var(--primary)' }}>
+        <div style={{ textAlign: 'center', padding: '1.5rem', color: 'var(--brand-red)' }}>
           <Stethoscope size={56} style={{ marginBottom: '0.75rem' }} />
-          <h2 style={{ margin: 0, fontWeight: 800, letterSpacing: '-0.025em' }}>dAIgnostics Studio VetNarrative</h2>
+          <h2 style={{ margin: 0, fontWeight: 800, letterSpacing: '-0.025em', color: 'var(--primary)' }}>dAIgnostics Studio VetNarrative</h2>
         </div>
       );
     },

@@ -3,6 +3,7 @@
   --primary-dark: #1d4ed8;
   --secondary: #64748b;
   --accent: #f8fafc;
+  --brand-red: #E21E3A;
   --background: #f1f5f9;
   --surface: #ffffff;
   --text-main: #0f172a;
@@ -195,7 +196,7 @@ input[type="text"]:focus {
 
 .btn-ghost:hover {
   background: var(--accent);
-  color: var(--text-main);
+  color: var(--brand-red);
 }
 
 .report-output {
@@ -412,7 +413,7 @@ input[type="text"]:focus {
 
 .lang-btn.active {
   background: white;
-  color: var(--primary);
+  color: var(--brand-red);
   box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
 

@@ -6,7 +6,7 @@ const schema = a.schema({
     .model({
       name: a.string(),
     })
-    .authorization(allow => [allow.publicApiKey(), allow.authenticated()]),
+    .authorization(allow => [allow.publicApiKey()]),
 
   Diagnosis: a
     .model({

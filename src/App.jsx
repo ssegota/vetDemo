@@ -127,15 +127,13 @@ function GeneratorContent({ signOut, user }) {
   };
 
   const deleteFromHistory = async (e, id) => {
-    e.stopPropagation(); // Prevent loading the item when clicking delete
-    if (window.confirm('Are you sure you want to delete this diagnosis?')) {
-      try {
-        await client.models.Diagnosis.delete({ id });
-        fetchHistory(); // Refresh the list
-      } catch (error) {
-        console.error('Error deleting diagnosis:', error);
-        alert('Failed to delete diagnosis.');
-      }
+    e.stopPropagation();
+    try {
+      await client.models.Diagnosis.delete({ id });
+      fetchHistory(); // Refresh the list
+    } catch (error) {
+      console.error('Error deleting diagnosis:', error);
+      alert('Failed to delete diagnosis.');
     }
   };
 
@@ -144,20 +142,15 @@ function GeneratorContent({ signOut, user }) {
       // Dynamic import to avoid missing window globals during build
       const html2pdf = (await import('html2pdf.js')).default;
 
-      const tempDiv = document.createElement('div');
-      tempDiv.style.padding = '20px';
-      tempDiv.style.fontFamily = 'Inter, sans-serif';
-      tempDiv.style.color = '#0f172a';
-      tempDiv.style.lineHeight = '1.6';
-      
       const date = new Date().toLocaleDateString();
       const doctor = user?.signInDetails?.loginId || 'N/A';
       
       let htmlContent = `
-        <h2 style="color: #2563eb; margin-bottom: 5px;">dAIgnostics Studio VetNarrative</h2>
-        <p style="color: #64748b; font-size: 13px; margin-top: 0; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px;">
-          Generated on ${date} | Doctor: ${doctor}
-        </p>
+        <div style="padding: 20px; font-family: 'Inter', sans-serif; color: #0f172a; line-height: 1.6;">
+          <h2 style="color: #2563eb; margin-bottom: 5px;">dAIgnostics Studio VetNarrative</h2>
+          <p style="color: #64748b; font-size: 13px; margin-top: 0; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px;">
+            Generated on ${date} | Doctor: ${doctor}
+          </p>
       `;
       
       if (details) {
@@ -176,20 +169,14 @@ function GeneratorContent({ signOut, user }) {
       }
       
       htmlContent += `
-        <h3 style="margin-top: 20px; margin-bottom: 5px;">Narrative Report:</h3>
-        <p style="margin-top: 0; color: #1e293b; white-space: pre-wrap;">${report}</p>
-        
-        <div style="margin-top: 40px; font-size: 11px; color: #94a3b8; text-align: center;">
-          Confidential Veterinary Report - dAIgnostics Studio VetNarrative
+          <h3 style="margin-top: 20px; margin-bottom: 5px;">Narrative Report:</h3>
+          <p style="margin-top: 0; color: #1e293b; white-space: pre-wrap;">${report}</p>
+          
+          <div style="margin-top: 40px; font-size: 11px; color: #94a3b8; text-align: center;">
+            Confidential Veterinary Report - dAIgnostics Studio VetNarrative
+          </div>
         </div>
       `;
-      
-      tempDiv.innerHTML = htmlContent;
-      // Temporarily append to body (off-screen) so html2canvas can measure it
-      tempDiv.style.position = 'absolute';
-      tempDiv.style.top = '-9999px';
-      tempDiv.style.width = '700px'; 
-      document.body.appendChild(tempDiv);
       
       const opt = {
         margin:       15,
@@ -199,26 +186,20 @@ function GeneratorContent({ signOut, user }) {
         jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
       };
       
-      const pdfBlob = await html2pdf().set(opt).from(tempDiv).output('blob');
+      // Passing the string directly allows html2pdf to handle the hidden container logic itself, preventing empty renders.
+      const pdfBlob = await html2pdf().set(opt).from(htmlContent).output('blob');
       const blobUrl = URL.createObjectURL(pdfBlob);
       
-      // Open the PDF in a new tab instead of forcing a download.
-      // This bypasses issues where embedded browsers or Playwright intercept downloads and rename them to UUIDs without extensions.
-      const newWin = window.open(blobUrl, '_blank');
-      
-      // If popup was blocked, fallback to download
-      if (!newWin) {
-        const link = document.createElement('a');
-        link.href = blobUrl;
-        link.download = 'diagnostic_report.pdf';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-      }
+      // Trigger a standard download anchor so testing tools can capture it cleanly as a file download event.
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = 'diagnostic_report.pdf';
+      document.body.appendChild(link);
+      link.click();
       
       // Cleanup
-      document.body.removeChild(tempDiv);
-      setTimeout(() => URL.revokeObjectURL(blobUrl), 10000); // Give enough time for the new tab to load the blob
+      document.body.removeChild(link);
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
     } catch (error) {
       console.error('Error generating PDF:', error);
       alert('Failed to generate PDF. Check console for details.');

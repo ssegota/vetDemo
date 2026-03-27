@@ -13,7 +13,8 @@ import {
   X,
   ChevronRight,
   Clock,
-  FileText
+  FileText,
+  Trash2
 } from 'lucide-react';
 import '@aws-amplify/ui-react/styles.css';
 import outputs from '../amplify_outputs.json';
@@ -74,15 +75,26 @@ function GeneratorContent({ signOut, user }) {
       } else {
         // Clean up: if data is a technical string representation of a result object, parse it
         let cleanReport = data;
-        if (typeof data === 'string' && (data.includes('statusCode=200') || data.startsWith('{'))) {
-          try {
-            // Attempt to parse if it's JSON, or handle the custom format seen in feedback
-            if (data.startsWith('{')) {
-              const parsed = JSON.parse(data);
-              cleanReport = parsed.report || parsed.body || data;
+        if (typeof data === 'string') {
+          // Handle the weird python dictionary string format: {statusCode=200, headers={...}, body={"report": "..."}}
+          if (data.includes('body={"report":') || data.includes("body={'report':")) {
+            try {
+              // Extract everything from {"report": ...} to the end (excluding the closing brace of the main object if possible)
+              const bodyMatch = data.match(/body=(\{"report":\s*[\s\S]*?\})\s*\}$/);
+              if (bodyMatch && bodyMatch[1]) {
+                const parsedBody = JSON.parse(bodyMatch[1]);
+                cleanReport = parsedBody.report || parsedBody.body || data;
+              } else {
+                 // Fallback regex if it's deeply nested
+                 const directMatch = data.match(/"report":\s*"(.*)"\s*\}/s);
+                 if (directMatch && directMatch[1]) {
+                   // Replace escaped newlines
+                   cleanReport = directMatch[1].replace(/\\n/g, '\n').replace(/\\"/g, '"');
+                 }
+              }
+            } catch (e) {
+              console.warn('Failed to parse complex report data string format, using fallback.');
             }
-          } catch (e) {
-            console.warn('Failed to parse report data as JSON, using raw string.');
           }
         }
         setReport(cleanReport || "No report generated.");
@@ -111,6 +123,19 @@ function GeneratorContent({ signOut, user }) {
       alert('❌ Failed to save diagnosis: ' + (error.message || 'Unknown error'));
     } finally {
       setSaving(false);
+    }
+  };
+
+  const deleteFromHistory = async (e, id) => {
+    e.stopPropagation(); // Prevent loading the item when clicking delete
+    if (window.confirm('Are you sure you want to delete this diagnosis?')) {
+      try {
+        await client.models.Diagnosis.delete({ id });
+        fetchHistory(); // Refresh the list
+      } catch (error) {
+        console.error('Error deleting diagnosis:', error);
+        alert('Failed to delete diagnosis.');
+      }
     }
   };
 
@@ -175,19 +200,25 @@ function GeneratorContent({ signOut, user }) {
       };
       
       const pdfBlob = await html2pdf().set(opt).from(tempDiv).output('blob');
-      
-      // Use native browser download for better compatibility and reliable file extensions
       const blobUrl = URL.createObjectURL(pdfBlob);
-      const link = document.createElement('a');
-      link.href = blobUrl;
-      link.download = 'diagnostic_report.pdf';
-      document.body.appendChild(link);
-      link.click();
+      
+      // Open the PDF in a new tab instead of forcing a download.
+      // This bypasses issues where embedded browsers or Playwright intercept downloads and rename them to UUIDs without extensions.
+      const newWin = window.open(blobUrl, '_blank');
+      
+      // If popup was blocked, fallback to download
+      if (!newWin) {
+        const link = document.createElement('a');
+        link.href = blobUrl;
+        link.download = 'diagnostic_report.pdf';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
       
       // Cleanup
-      document.body.removeChild(link);
-      URL.revokeObjectURL(blobUrl);
       document.body.removeChild(tempDiv);
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 10000); // Give enough time for the new tab to load the blob
     } catch (error) {
       console.error('Error generating PDF:', error);
       alert('Failed to generate PDF. Check console for details.');
@@ -315,10 +346,19 @@ function GeneratorContent({ signOut, user }) {
                 history.map(item => (
                   <div key={item.id} className="history-item" onClick={() => loadFromHistory(item)}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                      <h4 style={{ color: 'var(--primary)' }}>{item.details?.slice(0, 30) || item.keywords?.slice(0, 3).join(', ') || 'Diagnostic Report'}</h4>
-                      <ChevronRight size={16} />
+                      <h4 style={{ color: 'var(--primary)', flex: 1, margin: 0, paddingRight: '1rem' }}>
+                        {item.details?.slice(0, 30) || item.keywords?.slice(0, 3).join(', ') || 'Diagnostic Report'}
+                      </h4>
+                      <button 
+                        className="btn btn-ghost" 
+                        style={{ padding: '0.25rem', color: '#ef4444' }} 
+                        onClick={(e) => deleteFromHistory(e, item.id)}
+                        title="Delete Diagnosis"
+                      >
+                        <Trash2 size={16} />
+                      </button>
                     </div>
-                    {item.details && <p style={{ fontSize: '0.8rem', fontStyle: 'italic', marginBottom: '0.5rem' }}>{item.details.slice(0, 60)}...</p>}
+                    {item.details && <p style={{ fontSize: '0.8rem', fontStyle: 'italic', marginBottom: '0.5rem', marginTop: '0.5rem' }}>{item.details.slice(0, 60)}...</p>}
                     <p>{item.report}</p>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', marginTop: '0.75rem', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                       <Clock size={12} /> {new Date(item.createdAt).toLocaleDateString()} at {new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}

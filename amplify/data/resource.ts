@@ -6,7 +6,7 @@ const schema = a.schema({
     .model({
       name: a.string(),
     })
-    .authorization(allow => [allow.publicApiKey()]),
+    .authorization(allow => [allow.publicApiKey(), allow.authenticated()]),
 
   Diagnosis: a
     .model({
@@ -14,7 +14,7 @@ const schema = a.schema({
       keywords: a.string().array(),
       report: a.string(),
     })
-    .authorization(allow => [allow.publicApiKey()]),
+    .authorization(allow => [allow.owner()]),
 
   generateReport: a
     .mutation()
@@ -23,7 +23,7 @@ const schema = a.schema({
     })
     .returns(a.string())
     .handler(a.handler.function(generateReport))
-    .authorization((allow) => [allow.publicApiKey()]),
+    .authorization((allow) => [allow.authenticated()]),
 });
 
 export type Schema = ClientSchema<typeof schema>;
@@ -31,7 +31,7 @@ export type Schema = ClientSchema<typeof schema>;
 export const data = defineData({
   schema,
   authorizationModes: {
-    defaultAuthorizationMode: 'apiKey',
+    defaultAuthorizationMode: 'userPool',
     apiKeyAuthorizationMode: {
       expiresInDays: 30,
     },

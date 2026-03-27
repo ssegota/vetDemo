@@ -8,6 +8,13 @@ const schema = a.schema({
     })
     .authorization(allow => [allow.publicApiKey(), allow.authenticated()]),
 
+  Diagnosis: a
+    .model({
+      keywords: a.string().array(),
+      report: a.string(),
+    })
+    .authorization(allow => [allow.owner()]),
+
   generateReport: a
     .mutation()
     .arguments({

@@ -161,21 +161,14 @@ function GeneratorContent({ signOut, user }) {
 
   const deleteFromHistory = async (e, item) => {
     e.stopPropagation();
-    if (!item || !item.id) {
-      console.error('No ID found for item:', item);
-      return;
-    }
-    
-    if (!window.confirm(t('delete_confirm'))) return;
+    if (!item || !item.id) return;
     
     try {
       console.log('Deleting diagnosis ID:', item.id);
       await client.models.Diagnosis.delete({ id: item.id });
-      alert(t('delete_success'));
-      fetchHistory(); // Refresh the list
+      fetchHistory(); 
     } catch (error) {
       console.error('Error deleting diagnosis:', error);
-      alert('❌ Failed to delete: ' + (error.message || 'Unknown error'));
     }
   };
 
@@ -589,8 +582,9 @@ function GeneratorContent({ signOut, user }) {
                         {item.details?.slice(0, 30) || item.keywords?.slice(0, 3).join(', ') || 'Diagnostic Report'}
                       </h4>
                       <button 
+                        type="button"
                         className="btn btn-ghost" 
-                        style={{ padding: '0.5rem', color: '#ef4444', zIndex: 10, position: 'relative' }} 
+                        style={{ padding: '0.6rem', color: '#ef4444', zIndex: 10, position: 'relative' }} 
                         onClick={(e) => deleteFromHistory(e, item)}
                         title="Delete Diagnosis"
                       >

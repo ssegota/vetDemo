@@ -10,6 +10,7 @@ import {
   History, 
   LogOut, 
   Stethoscope, 
+  PawPrint,
   X,
   ChevronRight,
   Clock,
@@ -450,7 +451,10 @@ function GeneratorContent({ signOut, user }) {
           onClick={resetForm}
           title={lang === 'en' ? 'New Diagnosis' : 'Novi nalaz'}
         >
-          <Stethoscope size={32} color="var(--brand-red)" />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.15rem' }}>
+            <PawPrint size={24} color="var(--brand-red)" style={{ transform: 'rotate(-15deg)' }} />
+            <Stethoscope size={28} color="var(--brand-red)" />
+          </div>
           <h1 className="hide-mobile" style={{ fontSize: '1.25rem' }}>dAIgnostics Studio VetNarrative</h1>
         </div>
         
@@ -637,7 +641,10 @@ export default function App() {
     Header() {
       return (
         <div style={{ textAlign: 'center', padding: '1.5rem', color: 'var(--brand-red)' }}>
-          <Stethoscope size={56} style={{ marginBottom: '0.75rem' }} />
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.25rem', marginBottom: '0.75rem' }}>
+            <PawPrint size={56} style={{ transform: 'rotate(-15deg)' }} />
+            <Stethoscope size={56} />
+          </div>
           <h2 style={{ margin: 0, fontWeight: 800, letterSpacing: '-0.025em', color: 'var(--primary)' }}>dAIgnostics Studio VetNarrative</h2>
         </div>
       );

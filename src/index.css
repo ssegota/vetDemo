@@ -452,9 +452,10 @@ input[type="text"]:focus {
   border-bottom-width: 2px !important;
 }
 
-.auth-wrapper .amplify-tabs__item:hover {
+.auth-wrapper .amplify-tabs__item:not(.amplify-tabs__item--active):hover {
   color: var(--primary) !important;
-  border-color: var(--primary) !important;
+  border-bottom: none !important;
+  border-top: none !important;
 }
 
 .auth-wrapper .amplify-tabs__item--active {
@@ -487,6 +488,7 @@ input[type="text"]:focus {
 }
 
 .auth-wrapper .amplify-authenticator {
-  border-top: 4px solid var(--brand-red) !important;
+  border: none !important;
   border-radius: var(--radius);
+  box-shadow: var(--shadow);
 }

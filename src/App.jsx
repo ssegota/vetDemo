@@ -16,6 +16,8 @@ import {
   FileText,
   Trash2
 } from 'lucide-react';
+import { jsPDF } from 'jspdf';
+import html2canvas from 'html2canvas';
 import '@aws-amplify/ui-react/styles.css';
 import outputs from '../amplify_outputs.json';
 import './index.css';
@@ -128,81 +130,127 @@ function GeneratorContent({ signOut, user }) {
 
   const deleteFromHistory = async (e, id) => {
     e.stopPropagation();
+    if (!window.confirm('Are you sure you want to delete this diagnosis?')) return;
+    
     try {
-      await client.models.Diagnosis.delete({ id });
+      console.log('Attempting to delete diagnosis with ID:', id);
+      await client.models.Diagnosis.delete({ id: id });
+      alert('🗑️ Diagnosis deleted from your history.');
       fetchHistory(); // Refresh the list
     } catch (error) {
       console.error('Error deleting diagnosis:', error);
-      alert('Failed to delete diagnosis.');
+      alert('❌ Failed to delete diagnosis: ' + (error.message || 'Unknown error'));
     }
   };
 
   const downloadPDF = async () => {
     try {
-      // Dynamic import to avoid missing window globals during build
-      const html2pdf = (await import('html2pdf.js')).default;
-
       const date = new Date().toLocaleDateString();
       const doctor = user?.signInDetails?.loginId || 'N/A';
       
+      // Create a hidden but "visible to layout" container
+      const tempDiv = document.createElement('div');
+      tempDiv.id = 'pdf-render-container';
+      tempDiv.style.position = 'fixed';
+      tempDiv.style.top = '0';
+      tempDiv.style.left = '-2000px'; // Far off-screen
+      tempDiv.style.width = '700px'; 
+      tempDiv.style.padding = '40px';
+      tempDiv.style.backgroundColor = '#ffffff';
+      tempDiv.style.fontFamily = "'Inter', sans-serif";
+      tempDiv.style.color = '#0f172a';
+      tempDiv.style.lineHeight = '1.6';
+      
       let htmlContent = `
-        <div style="padding: 20px; font-family: 'Inter', sans-serif; color: #0f172a; line-height: 1.6;">
-          <h2 style="color: #2563eb; margin-bottom: 5px;">dAIgnostics Studio VetNarrative</h2>
-          <p style="color: #64748b; font-size: 13px; margin-top: 0; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px;">
-            Generated on ${date} | Doctor: ${doctor}
+        <div style="border-bottom: 2px solid #2563eb; padding-bottom: 20px; margin-bottom: 30px;">
+          <h1 style="color: #2563eb; margin: 0; font-size: 28px;">dAIgnostics Studio VetNarrative</h1>
+          <p style="color: #64748b; font-size: 14px; margin: 10px 0 0 0;">
+            Professional Veterinary Diagnostic Report
           </p>
+        </div>
+        
+        <div style="margin-bottom: 30px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+          <div>
+            <p style="margin: 0; font-weight: 700; font-size: 12px; color: #64748b; text-transform: uppercase;">Generated On</p>
+            <p style="margin: 5px 0 0 0; font-size: 16px;">${date}</p>
+          </div>
+          <div>
+            <p style="margin: 0; font-weight: 700; font-size: 12px; color: #64748b; text-transform: uppercase;">Doctor</p>
+            <p style="margin: 5px 0 0 0; font-size: 16px;">${doctor}</p>
+          </div>
+        </div>
       `;
       
       if (details) {
         htmlContent += `
-          <h3 style="margin-top: 20px; margin-bottom: 5px;">Clinical Details:</h3>
-          <p style="margin-top: 0; color: #475569;">${details.replace(/\n/g, '<br>')}</p>
+          <div style="margin-bottom: 25px;">
+            <p style="margin: 0 0 10px 0; font-weight: 700; font-size: 14px; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px;">Case Details:</p>
+            <p style="margin: 0; font-size: 14px; white-space: pre-wrap; color: #475569;">${details}</p>
+          </div>
         `;
       }
       
       const activeKeywords = keywords.filter(k => k.trim() !== '').join(', ');
       if (activeKeywords) {
         htmlContent += `
-          <h3 style="margin-top: 20px; margin-bottom: 5px;">Observations:</h3>
-          <p style="margin-top: 0; color: #475569;">${activeKeywords}</p>
+          <div style="margin-bottom: 25px;">
+            <p style="margin: 0 0 10px 0; font-weight: 700; font-size: 14px; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px;">Observations:</p>
+            <p style="margin: 0; font-size: 14px; color: #475569;">${activeKeywords}</p>
+          </div>
         `;
       }
       
       htmlContent += `
-          <h3 style="margin-top: 20px; margin-bottom: 5px;">Narrative Report:</h3>
-          <p style="margin-top: 0; color: #1e293b; white-space: pre-wrap;">${report}</p>
-          
-          <div style="margin-top: 40px; font-size: 11px; color: #94a3b8; text-align: center;">
-            Confidential Veterinary Report - dAIgnostics Studio VetNarrative
-          </div>
+        <div style="margin-bottom: 25px;">
+          <p style="margin: 0 0 10px 0; font-weight: 700; font-size: 14px; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px;">Narrative Report:</p>
+          <div style="margin: 0; font-size: 14px; line-height: 1.8; color: #1e293b; white-space: pre-wrap;">${report}</div>
+        </div>
+        
+        <div style="margin-top: 50px; padding-top: 20px; border-top: 1px solid #e2e8f0; text-align: center; color: #94a3b8; font-size: 10px;">
+          This report was generated using dAIgnostics Studio VetNarrative AI. Confidential information for veterinary professional use only.
         </div>
       `;
       
-      const opt = {
-        margin:       15,
-        filename:     `diagnostic_report.pdf`,
-        image:        { type: 'jpeg', quality: 1.0 },
-        html2canvas:  { scale: 2, useCORS: true },
-        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
-      };
+      tempDiv.innerHTML = htmlContent;
+      document.body.appendChild(tempDiv);
       
-      // Passing the string directly allows html2pdf to handle the hidden container logic itself, preventing empty renders.
-      const pdfBlob = await html2pdf().set(opt).from(htmlContent).output('blob');
+      // Wait for font/rendering
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      const canvas = await html2canvas(tempDiv, {
+        scale: 2, // Retina quality
+        useCORS: true,
+        backgroundColor: '#ffffff'
+      });
+      
+      const imgData = canvas.toDataURL('image/jpeg', 0.95);
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'px',
+        format: [canvas.width / 2, canvas.height / 2] // Scale to actual dimensions
+      });
+      
+      pdf.addImage(imgData, 'JPEG', 0, 0, canvas.width / 2, canvas.height / 2);
+      
+      const fileName = `veterinary_report_${new Date().getTime()}.pdf`;
+      
+      // Direct blob download approach
+      const pdfBlob = pdf.output('blob');
       const blobUrl = URL.createObjectURL(pdfBlob);
-      
-      // Trigger a standard download anchor so testing tools can capture it cleanly as a file download event.
       const link = document.createElement('a');
       link.href = blobUrl;
-      link.download = 'diagnostic_report.pdf';
+      link.download = fileName;
       document.body.appendChild(link);
       link.click();
       
       // Cleanup
       document.body.removeChild(link);
-      setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+      document.body.removeChild(tempDiv);
+      URL.revokeObjectURL(blobUrl);
+      
     } catch (error) {
-      console.error('Error generating PDF:', error);
-      alert('Failed to generate PDF. Check console for details.');
+      console.error('Error in PDF generation flow:', error);
+      alert('❌ Failed to generate PDF: ' + (error.message || 'Unknown error'));
     }
   };
 

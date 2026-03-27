@@ -10,6 +10,7 @@ const schema = a.schema({
 
   Diagnosis: a
     .model({
+      details: a.string(),
       keywords: a.string().array(),
       report: a.string(),
     })

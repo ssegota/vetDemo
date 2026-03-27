@@ -55,20 +55,9 @@ Please generate a professional, narrative veterinary report that follows the sty
     const responseBody = JSON.parse(new TextDecoder().decode(response.body));
     const generatedReport = responseBody.content[0].text;
 
-    return {
-      statusCode: 200,
-      headers: {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Headers": "Content-Type",
-        "Access-Control-Allow-Methods": "OPTIONS,POST"
-      },
-      body: JSON.stringify({ report: generatedReport }),
-    };
+    return generatedReport;
   } catch (error: any) {
     console.error(error);
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ error: error.message }),
-    };
+    throw new Error(error.message);
   }
 };

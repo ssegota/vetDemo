@@ -14,8 +14,8 @@ const schema = a.schema({
       keywords: a.string().array(),
       report: a.string(),
     })
-    .authorization(allow => [allow.owner()]),
-  
+    .authorization(allow => [allow.publicApiKey()]),
+
   generateReport: a
     .mutation()
     .arguments({
@@ -23,7 +23,7 @@ const schema = a.schema({
     })
     .returns(a.string())
     .handler(a.handler.function(generateReport))
-    .authorization((allow) => [allow.authenticated()]),
+    .authorization((allow) => [allow.publicApiKey()]),
 });
 
 export type Schema = ClientSchema<typeof schema>;
@@ -31,7 +31,7 @@ export type Schema = ClientSchema<typeof schema>;
 export const data = defineData({
   schema,
   authorizationModes: {
-    defaultAuthorizationMode: 'userPool',
+    defaultAuthorizationMode: 'apiKey',
     apiKeyAuthorizationMode: {
       expiresInDays: 30,
     },

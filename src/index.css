@@ -316,7 +316,7 @@ input[type="text"]:focus {
   text-align: center;
   padding: 2rem;
   font-size: 0.875rem;
-  color: var(--text-muted);
+  color: var(--brand-red);
   margin-top: auto;
 }
 
@@ -413,7 +413,7 @@ input[type="text"]:focus {
 
 .lang-btn.active {
   background: white;
-  color: var(--brand-red);
+  color: var(--primary);
   box-shadow: 0 2px 4px rgba(0,0,0,0.05);
 }
 

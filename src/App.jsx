@@ -170,7 +170,7 @@ function GeneratorContent({ signOut, user }) {
       fetchHistory(); // Refresh the list
     } catch (error) {
       console.error('Error deleting diagnosis:', error);
-      alert('❌ ' + t('error') + ': ' + (error.message || 'Unknown error'));
+      alert('❌ Failed to delete: ' + (error.message || 'Unknown error'));
     }
   };
 

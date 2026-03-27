@@ -444,23 +444,24 @@ input[type="text"]:focus {
 }
 
 .auth-wrapper .amplify-tabs {
-  border-bottom: 2px solid var(--border);
+  border: none !important;
 }
 
 .auth-wrapper .amplify-tabs__item {
   color: var(--text-muted) !important;
-  border-bottom-width: 2px !important;
+  border: none !important;
+  background: transparent !important;
 }
 
 .auth-wrapper .amplify-tabs__item:not(.amplify-tabs__item--active):hover {
   color: var(--primary) !important;
-  border-bottom: none !important;
-  border-top: none !important;
+  border: none !important;
 }
 
 .auth-wrapper .amplify-tabs__item--active {
-  border-color: var(--brand-red) !important;
+  border: none !important;
   color: var(--brand-red) !important;
+  background: transparent !important;
 }
 
 .auth-wrapper .amplify-button--primary {

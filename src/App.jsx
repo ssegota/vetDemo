@@ -234,20 +234,30 @@ function GeneratorContent({ signOut, user }) {
       
       const fileName = `veterinary_report_${new Date().getTime()}.pdf`;
       
-      // Direct blob download approach
       const pdfBlob = pdf.output('blob');
       const blobUrl = URL.createObjectURL(pdfBlob);
-      const link = document.createElement('a');
-      link.href = blobUrl;
-      link.download = fileName;
-      document.body.appendChild(link);
-      link.click();
       
-      // Cleanup
-      document.body.removeChild(link);
+      // Open in a new tab to bypass the /tmp/ download interceptor issues.
+      // The user can then see the report and use the browser's "Save" or "Download" icon.
+      const newTab = window.open(blobUrl, '_blank');
+      
+      // Cleanup the DOM element
       document.body.removeChild(tempDiv);
-      URL.revokeObjectURL(blobUrl);
       
+      // If the tab opened successfully, we can't reliably set the title for a Blob URL in all browsers,
+      // but the data is there for viewing. 
+      if (!newTab) {
+        // Fallback to download if popup is blocked
+        const link = document.createElement('a');
+        link.href = blobUrl;
+        link.download = fileName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+      
+      // Revoke after a delay to ensure the new tab has loaded it
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
     } catch (error) {
       console.error('Error in PDF generation flow:', error);
       alert('❌ Failed to generate PDF: ' + (error.message || 'Unknown error'));

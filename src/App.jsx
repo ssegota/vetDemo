@@ -644,7 +644,7 @@ export default function App() {
     },
     Footer() {
       return (
-        <div style={{ textAlign: 'center', padding: '1.5rem', color: 'var(--text-muted)', fontSize: '0.75rem' }}>
+        <div style={{ textAlign: 'center', padding: '1.5rem', color: 'var(--brand-red)', fontSize: '0.75rem' }}>
           &copy; 2026 dAIgnostics Studio VetNarrative | Daignostics d.o.o
         </div>
       );

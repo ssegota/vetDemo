@@ -434,37 +434,50 @@ input[type="text"]:focus {
   background: var(--border);
 }
 
-.auth-wrapper :deep([data-amplify-authenticator]) {
+.auth-wrapper [data-amplify-authenticator] {
+  --amplify-colors-brand-primary-10: var(--primary);
+  --amplify-colors-brand-primary-20: var(--primary);
+  --amplify-colors-brand-primary-40: var(--primary);
+  --amplify-colors-brand-primary-60: var(--primary);
   --amplify-colors-brand-primary-80: var(--primary);
   --amplify-colors-brand-primary-90: var(--primary-dark);
   --amplify-colors-brand-primary-100: var(--primary-dark);
 }
 
-.auth-wrapper :deep(.amplify-tabs) {
+.auth-wrapper .amplify-tabs {
   border-bottom: 2px solid var(--border);
 }
 
-.auth-wrapper :deep(.amplify-tabs__item--active) {
-  border-color: var(--brand-red);
-  color: var(--brand-red);
+.auth-wrapper .amplify-tabs__item--active {
+  border-color: var(--brand-red) !important;
+  color: var(--brand-red) !important;
 }
 
-.auth-wrapper :deep(.amplify-button--primary) {
-  background: var(--primary);
-  border: none;
+.auth-wrapper .amplify-button--primary {
+  background: var(--primary) !important;
+  border: none !important;
   font-weight: 600;
 }
 
-.auth-wrapper :deep(.amplify-button--primary:hover) {
-  background: var(--primary-dark);
+.auth-wrapper .amplify-button--primary:hover {
+  background: var(--primary-dark) !important;
 }
 
-.auth-wrapper :deep(.amplify-field-group__control:focus-within) {
-  border-color: var(--primary);
-  box-shadow: 0 0 0 1px var(--primary);
+.auth-wrapper .amplify-button--link {
+  color: var(--primary) !important;
 }
 
-.auth-wrapper :deep(.amplify-authenticator) {
-  border-top: 4px solid var(--brand-red);
+.auth-wrapper .amplify-button--link:hover {
+  color: var(--primary-dark) !important;
+  background: transparent !important;
+}
+
+.auth-wrapper .amplify-field-group__control:focus-within {
+  border-color: var(--primary) !important;
+  box-shadow: 0 0 0 1px var(--primary) !important;
+}
+
+.auth-wrapper .amplify-authenticator {
+  border-top: 4px solid var(--brand-red) !important;
   border-radius: var(--radius);
 }

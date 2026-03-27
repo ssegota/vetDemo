@@ -317,3 +317,130 @@ input[type="text"]:focus {
   color: var(--text-muted);
   margin-top: auto;
 }
+
+/* Modal and Overlays */
+.profile-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.75);
+  backdrop-filter: blur(4px);
+  z-index: 1000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.profile-panel {
+  width: 100%;
+  max-width: 500px;
+  background: white;
+  border-radius: 1rem;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  max-height: 90vh;
+  overflow-y: auto;
+  animation: scaleUp 0.3s ease;
+}
+
+@keyframes scaleUp {
+  from { transform: scale(0.95); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.profile-header {
+  padding: 1.5rem;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.profile-body {
+  padding: 2rem;
+}
+
+.profile-section {
+  margin-bottom: 2rem;
+}
+
+.profile-section h4 {
+  margin-top: 0;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--primary);
+}
+
+.profile-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.lang-toggle {
+  display: flex;
+  background: var(--bg-secondary);
+  padding: 0.25rem;
+  border-radius: 0.5rem;
+  gap: 0.25rem;
+  border: 1px solid var(--border);
+  margin-right: 1rem;
+}
+
+.lang-btn {
+  padding: 0.4rem 0.8rem;
+  border-radius: 0.4rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  transition: all 0.2s;
+}
+
+.lang-btn.active {
+  background: white;
+  color: var(--primary);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.user-pill {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--bg-secondary);
+  border-radius: 0.75rem;
+  cursor: pointer;
+  transition: background 0.2s;
+  font-size: 0.9rem;
+  border: 1px solid var(--border);
+}
+
+.user-pill:hover {
+  background: var(--border);
+}
+
+.auth-wrapper :deep(.amplify-tabs) {
+  border-bottom: 1px solid var(--border);
+}
+
+.auth-wrapper :deep(.amplify-button--primary) {
+  background: var(--primary);
+  border: none;
+}
+
+.auth-wrapper :deep(.amplify-field-group__control:focus-within) {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 1px var(--primary);
+}

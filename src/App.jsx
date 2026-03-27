@@ -14,18 +14,25 @@ import {
   ChevronRight,
   Clock,
   FileText,
-  Trash2
+  Trash2,
+  User,
+  Globe,
+  Lock,
+  ShieldCheck
 } from 'lucide-react';
 import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
+import { fetchUserAttributes, updateUserAttributes, updatePassword } from 'aws-amplify/auth';
 import '@aws-amplify/ui-react/styles.css';
 import outputs from '../amplify_outputs.json';
+import { translations } from './translations';
 import './index.css';
 
 Amplify.configure(outputs);
 const client = generateClient();
 
 function GeneratorContent({ signOut, user }) {
+  const [lang, setLang] = useState(localStorage.getItem('vet_lang') || 'en');
   const [details, setDetails] = useState('');
   const [keywords, setKeywords] = useState(['', '', '']);
   const [report, setReport] = useState('');
@@ -33,7 +40,31 @@ function GeneratorContent({ signOut, user }) {
   const [saving, setSaving] = useState(false);
   const [history, setHistory] = useState([]);
   const [showHistory, setShowHistory] = useState(false);
+  const [showProfile, setShowProfile] = useState(false);
   const [loadingHistory, setLoadingHistory] = useState(false);
+  const [userProfile, setUserProfile] = useState({ firstName: '', lastName: '' });
+
+  const t = (key) => translations[lang][key] || key;
+
+  useEffect(() => {
+    localStorage.setItem('vet_lang', lang);
+  }, [lang]);
+
+  useEffect(() => {
+    loadProfile();
+  }, []);
+
+  const loadProfile = async () => {
+    try {
+      const attrs = await fetchUserAttributes();
+      setUserProfile({
+        firstName: attrs.given_name || '',
+        lastName: attrs.family_name || ''
+      });
+    } catch (e) {
+      console.error('Error fetching user attributes:', e);
+    }
+  };
 
   useEffect(() => {
     if (showHistory) {
@@ -130,23 +161,25 @@ function GeneratorContent({ signOut, user }) {
 
   const deleteFromHistory = async (e, id) => {
     e.stopPropagation();
-    if (!window.confirm('Are you sure you want to delete this diagnosis?')) return;
+    if (!window.confirm(t('delete_confirm'))) return;
     
     try {
       console.log('Attempting to delete diagnosis with ID:', id);
       await client.models.Diagnosis.delete({ id: id });
-      alert('🗑️ Diagnosis deleted from your history.');
+      alert(t('delete_success'));
       fetchHistory(); // Refresh the list
     } catch (error) {
       console.error('Error deleting diagnosis:', error);
-      alert('❌ Failed to delete diagnosis: ' + (error.message || 'Unknown error'));
+      alert('❌ ' + t('error') + ': ' + (error.message || 'Unknown error'));
     }
   };
 
   const downloadPDF = async () => {
     try {
       const date = new Date().toLocaleDateString();
-      const doctor = user?.signInDetails?.loginId || 'N/A';
+      const doctorDisplayName = userProfile.firstName && userProfile.lastName 
+        ? `${t('doctor_prefix')} ${userProfile.firstName} ${userProfile.lastName}`
+        : user?.signInDetails?.loginId || 'N/A';
       
       // Create a hidden but "visible to layout" container
       const tempDiv = document.createElement('div');
@@ -165,18 +198,18 @@ function GeneratorContent({ signOut, user }) {
         <div style="border-bottom: 2px solid #2563eb; padding-bottom: 20px; margin-bottom: 30px;">
           <h1 style="color: #2563eb; margin: 0; font-size: 28px;">dAIgnostics Studio VetNarrative</h1>
           <p style="color: #64748b; font-size: 14px; margin: 10px 0 0 0;">
-            Professional Veterinary Diagnostic Report
+            ${t('app_subtitle')}
           </p>
         </div>
         
         <div style="margin-bottom: 30px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
           <div>
-            <p style="margin: 0; font-weight: 700; font-size: 12px; color: #64748b; text-transform: uppercase;">Generated On</p>
+            <p style="margin: 0; font-weight: 700; font-size: 12px; color: #64748b; text-transform: uppercase;">${lang === 'en' ? 'Generated On' : 'Generirano dana'}</p>
             <p style="margin: 5px 0 0 0; font-size: 16px;">${date}</p>
           </div>
           <div>
-            <p style="margin: 0; font-weight: 700; font-size: 12px; color: #64748b; text-transform: uppercase;">Doctor</p>
-            <p style="margin: 5px 0 0 0; font-size: 16px;">${doctor}</p>
+            <p style="margin: 0; font-weight: 700; font-size: 12px; color: #64748b; text-transform: uppercase;">${lang === 'en' ? 'Doctor' : 'Doktor'}</p>
+            <p style="margin: 5px 0 0 0; font-size: 16px;">${doctorDisplayName}</p>
           </div>
         </div>
       `;
@@ -184,7 +217,7 @@ function GeneratorContent({ signOut, user }) {
       if (details) {
         htmlContent += `
           <div style="margin-bottom: 25px;">
-            <p style="margin: 0 0 10px 0; font-weight: 700; font-size: 14px; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px;">Case Details:</p>
+            <p style="margin: 0 0 10px 0; font-weight: 700; font-size: 14px; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px;">${t('case_details')}:</p>
             <p style="margin: 0; font-size: 14px; white-space: pre-wrap; color: #475569;">${details}</p>
           </div>
         `;
@@ -194,7 +227,7 @@ function GeneratorContent({ signOut, user }) {
       if (activeKeywords) {
         htmlContent += `
           <div style="margin-bottom: 25px;">
-            <p style="margin: 0 0 10px 0; font-weight: 700; font-size: 14px; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px;">Observations:</p>
+            <p style="margin: 0 0 10px 0; font-weight: 700; font-size: 14px; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px;">${t('observations_label')}:</p>
             <p style="margin: 0; font-size: 14px; color: #475569;">${activeKeywords}</p>
           </div>
         `;
@@ -202,12 +235,12 @@ function GeneratorContent({ signOut, user }) {
       
       htmlContent += `
         <div style="margin-bottom: 25px;">
-          <p style="margin: 0 0 10px 0; font-weight: 700; font-size: 14px; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px;">Narrative Report:</p>
+          <p style="margin: 0 0 10px 0; font-weight: 700; font-size: 14px; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px;">${t('narrative_report')}:</p>
           <div style="margin: 0; font-size: 14px; line-height: 1.8; color: #1e293b; white-space: pre-wrap;">${report}</div>
         </div>
         
         <div style="margin-top: 50px; padding-top: 20px; border-top: 1px solid #e2e8f0; text-align: center; color: #94a3b8; font-size: 10px;">
-          This report was generated using dAIgnostics Studio VetNarrative AI. Confidential information for veterinary professional use only.
+          ${t('footer_text')}
         </div>
       `;
       
@@ -271,18 +304,166 @@ function GeneratorContent({ signOut, user }) {
     setShowHistory(false);
   };
 
+  const ProfileModal = () => {
+    const [editingProfile, setEditingProfile] = useState({ ...userProfile });
+    const [passwords, setPasswords] = useState({ old: '', new: '', confirm: '' });
+    const [savingProfile, setSavingProfile] = useState(false);
+    const [changingPassword, setChangingPassword] = useState(false);
+
+    const handleUpdateProfile = async (e) => {
+      e.preventDefault();
+      setSavingProfile(true);
+      try {
+        await updateUserAttributes({
+          userAttributes: {
+            given_name: editingProfile.firstName,
+            family_name: editingProfile.lastName
+          }
+        });
+        await loadProfile();
+        alert(t('profile_update_success'));
+      } catch (err) {
+        console.error(err);
+        alert('Error: ' + err.message);
+      } finally {
+        setSavingProfile(false);
+      }
+    };
+
+    const handleChangePassword = async (e) => {
+      e.preventDefault();
+      if (passwords.new !== passwords.confirm) {
+        alert(t('password_match_error'));
+        return;
+      }
+      setChangingPassword(true);
+      try {
+        await updatePassword({
+          oldPassword: passwords.old,
+          newPassword: passwords.new
+        });
+        alert(t('password_change_success'));
+        setPasswords({ old: '', new: '', confirm: '' });
+      } catch (err) {
+        console.error(err);
+        alert('Error: ' + err.message);
+      } finally {
+        setChangingPassword(false);
+      }
+    };
+
+    return (
+      <div className="profile-overlay" onClick={() => setShowProfile(false)}>
+        <div className="profile-panel" onClick={e => e.stopPropagation()}>
+          <div className="profile-header">
+            <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <User size={20} /> {t('profile_title')}
+            </h3>
+            <button className="btn btn-ghost" onClick={() => setShowProfile(false)}>
+              <X size={20} />
+            </button>
+          </div>
+          <div className="profile-body">
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '1.5rem' }}>{t('profile_instructions')}</p>
+            
+            <form className="profile-section" onSubmit={handleUpdateProfile}>
+              <h4><ShieldCheck size={18} /> {t('profile_title')}</h4>
+              <div className="profile-row">
+                <div>
+                  <label className="input-label">{t('first_name')}</label>
+                  <input 
+                    type="text" 
+                    value={editingProfile.firstName} 
+                    onChange={e => setEditingProfile({...editingProfile, firstName: e.target.value})}
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="input-label">{t('last_name')}</label>
+                  <input 
+                    type="text" 
+                    value={editingProfile.lastName} 
+                    onChange={e => setEditingProfile({...editingProfile, lastName: e.target.value})}
+                    required
+                  />
+                </div>
+              </div>
+              <button className="btn btn-primary" style={{ width: '100%' }} disabled={savingProfile}>
+                {savingProfile ? <div className="loading-spinner"></div> : t('update_profile')}
+              </button>
+            </form>
+
+            <hr style={{ margin: '2rem 0', border: 'none', borderTop: '1px solid var(--border)' }} />
+
+            <form className="profile-section" onSubmit={handleChangePassword}>
+              <h4><Lock size={18} /> {t('change_password')}</h4>
+              <div style={{ marginBottom: '1rem' }}>
+                <label className="input-label">{t('old_password')}</label>
+                <input 
+                  type="password" 
+                  value={passwords.old} 
+                  onChange={e => setPasswords({...passwords, old: e.target.value})}
+                  required
+                />
+              </div>
+              <div className="profile-row">
+                <div>
+                  <label className="input-label">{t('new_password')}</label>
+                  <input 
+                    type="password" 
+                    value={passwords.new} 
+                    onChange={e => setPasswords({...passwords, new: e.target.value})}
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="input-label">{t('confirm_password')}</label>
+                  <input 
+                    type="password" 
+                    value={passwords.confirm} 
+                    onChange={e => setPasswords({...passwords, confirm: e.target.value})}
+                    required
+                  />
+                </div>
+              </div>
+              <button className="btn btn-secondary" style={{ width: '100%' }} disabled={changingPassword}>
+                {changingPassword ? <div className="loading-spinner"></div> : t('change_password')}
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="app-container">
       <header>
-        <h1><Stethoscope /> dAIgnostics Studio</h1>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <button onClick={() => setShowHistory(true)} className="btn btn-ghost" title="Past Diagnoses">
-            <History size={20} /> <span className="hide-mobile">History</span>
-          </button>
-          <div className="btn btn-secondary hide-mobile" style={{ cursor: 'default' }}>
-            {user?.signInDetails?.loginId}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <Stethoscope size={32} color="var(--primary)" />
+          <h1 className="hide-mobile" style={{ fontSize: '1.25rem' }}>{t('app_title')}</h1>
+        </div>
+        
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <div className="lang-toggle">
+            <button className={`lang-btn ${lang === 'en' ? 'active' : ''}`} onClick={() => setLang('en')}>EN</button>
+            <button className={`lang-btn ${lang === 'hr' ? 'active' : ''}`} onClick={() => setLang('hr')}>HR</button>
           </div>
-          <button onClick={signOut} className="btn btn-ghost" title="Sign Out">
+
+          <button onClick={() => setShowHistory(true)} className="btn btn-ghost" title={t('history')}>
+            <History size={20} /> <span className="hide-mobile">{t('history')}</span>
+          </button>
+          
+          <div className="user-pill" onClick={() => setShowProfile(true)}>
+            <User size={18} />
+            <span className="hide-mobile" style={{ maxWidth: '150px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {userProfile.firstName && userProfile.lastName 
+                ? `${userProfile.firstName} ${userProfile.lastName}` 
+                : user?.signInDetails?.loginId}
+            </span>
+          </div>
+
+          <button onClick={signOut} className="btn btn-ghost" title={t('sign_out')}>
             <LogOut size={20} />
           </button>
         </div>
@@ -290,37 +471,37 @@ function GeneratorContent({ signOut, user }) {
 
       <main className={`main-content ${report ? 'with-report' : ''}`}>
         <section className="card keyword-section">
-          <h2>Clinical Input</h2>
+          <h2>{t('clinical_input')}</h2>
           <p style={{ marginBottom: '1.5rem', color: 'var(--text-muted)' }}>
-            Provide case details and observations for a professional narrative analysis.
+            {t('clinical_input_subtitle')}
           </p>
 
           <div style={{ marginBottom: '1.5rem' }}>
-            <label className="input-label">Case Details</label>
+            <label className="input-label">{t('case_details')}</label>
             <textarea
               className="details-textarea"
-              placeholder="Enter patient details, history, or context..."
+              placeholder={t('case_details_placeholder')}
               value={details}
               onChange={(e) => setDetails(e.target.value)}
             />
           </div>
           
           <div>
-            <label className="input-label">Clinical Observations (Keywords)</label>
+            <label className="input-label">{t('observations_label')}</label>
             <div className="keyword-inputs">
               {keywords.map((kw, index) => (
                 <input
                   key={index}
                   type="text"
-                  placeholder={`Observation ${index + 1}...`}
+                  placeholder={`${t('observation_placeholder')} ${index + 1}...`}
                   value={kw}
                   onChange={(e) => handleKeywordChange(index, e.target.value)}
                 />
               ))}
             </div>
             <div style={{ marginTop: '0.75rem' }}>
-              <button className="btn btn-secondary btn-sm" onClick={addKeywordField} title="Add another observation">
-                <Plus size={16} /> Add Observation
+              <button className="btn btn-secondary btn-sm" onClick={addKeywordField} title={t('add_observation')}>
+                <Plus size={16} /> {t('add_observation')}
               </button>
             </div>
           </div>
@@ -331,7 +512,7 @@ function GeneratorContent({ signOut, user }) {
             onClick={generateReport}
             disabled={loading || (keywords.every(k => k.trim() === '') && !details)}
           >
-            {loading ? <div className="loading-spinner"></div> : <><Send size={18} /> Generate Narrative</>}
+            {loading ? <div className="loading-spinner"></div> : <><Send size={18} /> {t('generate_btn')}</>}
           </button>
         </section>
 
@@ -339,19 +520,19 @@ function GeneratorContent({ signOut, user }) {
           <section className="card report-output">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
               <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <FileText size={20} /> Narrative Report
+                <FileText size={20} /> {t('narrative_report')}
               </h3>
               <div className="actions">
-                <button className="btn btn-secondary" onClick={downloadPDF} title="Download as PDF">
-                  <Download size={18} /> PDF
+                <button className="btn btn-secondary" onClick={downloadPDF} title={t('pdf_btn')}>
+                  <Download size={18} /> {t('pdf_btn')}
                 </button>
                 <button 
                   className="btn btn-primary" 
                   onClick={saveToStorage} 
                   disabled={saving}
-                  title="Save to history"
+                  title={t('save_btn')}
                 >
-                  {saving ? <div className="loading-spinner"></div> : <><Save size={18} /> Save</>}
+                  {saving ? <div className="loading-spinner"></div> : <><Save size={18} /> {t('save_btn')}</>}
                 </button>
               </div>
             </div>
@@ -369,7 +550,7 @@ function GeneratorContent({ signOut, user }) {
         <div className="history-overlay" onClick={() => setShowHistory(false)}>
           <div className="history-panel" onClick={e => e.stopPropagation()}>
             <div className="history-header">
-              <h3 style={{ margin: 0 }}>Diagnosis History</h3>
+              <h3 style={{ margin: 0 }}>{t('diagnosis_history')}</h3>
               <button className="btn btn-ghost" onClick={() => setShowHistory(false)}>
                 <X size={20} />
               </button>
@@ -380,7 +561,7 @@ function GeneratorContent({ signOut, user }) {
                   <div className="loading-spinner"></div>
                 </div>
               ) : history.length === 0 ? (
-                <p style={{ textAlign: 'center', color: 'var(--text-muted)' }}>No saved diagnoses yet.</p>
+                <p style={{ textAlign: 'center', color: 'var(--text-muted)' }}>{t('no_history')}</p>
               ) : (
                 history.map(item => (
                   <div key={item.id} className="history-item" onClick={() => loadFromHistory(item)}>
@@ -398,7 +579,6 @@ function GeneratorContent({ signOut, user }) {
                       </button>
                     </div>
                     {item.details && <p style={{ fontSize: '0.8rem', fontStyle: 'italic', marginBottom: '0.5rem', marginTop: '0.5rem' }}>{item.details.slice(0, 60)}...</p>}
-                    <p>{item.report}</p>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', marginTop: '0.75rem', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                       <Clock size={12} /> {new Date(item.createdAt).toLocaleDateString()} at {new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </div>
@@ -410,14 +590,36 @@ function GeneratorContent({ signOut, user }) {
         </div>
       )}
 
+      {showProfile && <ProfileModal />}
+
       <footer className="footer">
-        © 2026 dAIgnostics Studio VetNarrative | Professional Diagnostic Toolkit
+        {t('footer_text')}
       </footer>
     </div>
   );
 }
 
 export default function App() {
+  const formFields = {
+    signUp: {
+      email: { order: 1 },
+      given_name: { 
+        label: 'First Name', 
+        placeholder: 'Enter your first name', 
+        required: true,
+        order: 2 
+      },
+      family_name: { 
+        label: 'Last Name', 
+        placeholder: 'Enter your last name', 
+        required: true,
+        order: 3 
+      },
+      password: { order: 4 },
+      confirm_password: { order: 5 }
+    }
+  };
+
   const components = {
     Header() {
       return (
@@ -430,8 +632,8 @@ export default function App() {
     },
     Footer() {
       return (
-        <div style={{ textAlign: 'center', padding: '1rem', color: 'var(--text-muted)', fontSize: '0.75rem' }}>
-          &copy; 2026 Veterinary Faculty Inspiration | dAIgnostics Studio
+        <div style={{ textAlign: 'center', padding: '1.5rem', color: 'var(--text-muted)', fontSize: '0.75rem' }}>
+          &copy; 2026 dAIgnostics Studio VetNarrative | Daignostics d.o.o
         </div>
       );
     },
@@ -439,7 +641,7 @@ export default function App() {
 
   return (
     <div className="auth-wrapper">
-      <Authenticator components={components}>
+      <Authenticator components={components} formFields={formFields}>
         {({ signOut, user }) => (
           <GeneratorContent signOut={signOut} user={user} />
         )}

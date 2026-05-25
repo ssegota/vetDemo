@@ -26,3 +26,15 @@ generateReportFn.addToRolePolicy(
     ],
   })
 );
+
+generateReportFn.addToRolePolicy(
+  new PolicyStatement({
+    effect: Effect.ALLOW,
+    actions: [
+      'aws-marketplace:ViewSubscriptions',
+      'aws-marketplace:Subscribe',
+      'aws-marketplace:Unsubscribe',
+    ],
+    resources: ['*'],
+  })
+);

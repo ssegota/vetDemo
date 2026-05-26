@@ -2,6 +2,8 @@ import { Construct } from 'constructs';
 import { defineFunction } from '@aws-amplify/backend';
 import { Function, Runtime, Code } from 'aws-cdk-lib/aws-lambda';
 import { Duration } from 'aws-cdk-lib';
+import { Bucket, BlockPublicAccess } from 'aws-cdk-lib/aws-s3';
+import { PolicyStatement, Effect } from 'aws-cdk-lib/aws-iam';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -10,11 +12,38 @@ const __dirname = path.dirname(__filename);
 
 export const generateReport = defineFunction(
   (scope: Construct) => {
-    return new Function(scope, 'GenerateReportPython', {
+    // S3 bucket za semantički router bazu (baza.json)
+    const bazaBucket = new Bucket(scope, 'SemanticRouterBaza', {
+      blockPublicAccess: BlockPublicAccess.BLOCK_ALL,
+      versioned: true,
+    });
+
+    const fn = new Function(scope, 'GenerateReportPython', {
       runtime: Runtime.PYTHON_3_12,
       handler: 'handler.lambda_handler',
       code: Code.fromAsset(path.resolve(__dirname)),
-      timeout: Duration.seconds(30),
+      timeout: Duration.seconds(60),
+      environment: {
+        BAZA_S3_BUCKET: bazaBucket.bucketName,
+        BAZA_S3_KEY: 'semantic-router/baza.json',
+        BEDROCK_REGION: 'us-east-1',
+      },
     });
+
+    // Bedrock pristup (postojeći)
+    fn.addToRolePolicy(new PolicyStatement({
+      effect: Effect.ALLOW,
+      actions: ['bedrock:InvokeModel'],
+      resources: ['*'],
+    }));
+
+    // S3 pristup za čitanje i pisanje baze
+    fn.addToRolePolicy(new PolicyStatement({
+      effect: Effect.ALLOW,
+      actions: ['s3:GetObject', 's3:PutObject'],
+      resources: [`${bazaBucket.bucketArn}/semantic-router/*`],
+    }));
+
+    return fn;
   }
 );

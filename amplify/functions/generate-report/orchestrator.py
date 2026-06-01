@@ -150,12 +150,18 @@ class Orchestrator:
         print(f"[orchestrator] Zapisano u S3: s3://{S3_BUCKET}/{S3_KEY}")
 
     def _write_back_local(self, new_entry: dict) -> None:
-        with self.local_path.open(encoding="utf-8") as f:
-            entries = json.load(f)
+        # Lambda filesystem je read-only — pišemo u /tmp koji preživljava warm startove
+        tmp_path = Path("/tmp/baza_writeback.json")
+        if tmp_path.exists():
+            with tmp_path.open(encoding="utf-8") as f:
+                entries = json.load(f)
+        else:
+            with self.local_path.open(encoding="utf-8") as f:
+                entries = json.load(f)
         entries.append(new_entry)
-        with self.local_path.open("w", encoding="utf-8") as f:
+        with tmp_path.open("w", encoding="utf-8") as f:
             json.dump(entries, f, ensure_ascii=False, indent=2)
-        print(f"[orchestrator] Zapisano lokalno: {self.local_path}")
+        print(f"[orchestrator] Zapisano u /tmp: {len(entries)} unosa")
 
 
 # ---------- Lambda globalni cache ----------

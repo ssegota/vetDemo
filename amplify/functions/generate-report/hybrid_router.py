@@ -196,8 +196,15 @@ def _load_entries(
             print(f"Bootstrap gotov: {len(entries)} unosa uploadano na s3://{bucket}/{key}")
             return entries
 
+    # Provjeri /tmp write-back (warm Lambda s novim unosima)
+    tmp_path = Path("/tmp/baza_writeback.json")
+    if tmp_path.exists():
+        print(f"Učitavam bazu iz /tmp (warm start s write-backom)")
+        with tmp_path.open(encoding="utf-8") as f:
+            return json.load(f)
+
     path = local_path or DEFAULT_BAZA
-    print(f"Učitavam bazu iz lokalnog fajla: {path}")
+    print(f"Učitavam bazu iz bundlanog fajla: {path}")
     with Path(path).open(encoding="utf-8") as f:
         return json.load(f)
 

@@ -37,7 +37,7 @@ DEFAULT_BAZA = Path(__file__).parent / "baza.json"
 
 # Bedrock cross-region inference — Lambda je u eu-north-1, Bedrock u us-east-1
 BEDROCK_REGION = os.environ.get("BEDROCK_REGION", "us-east-1")
-HAIKU_MODEL_ID = "us.anthropic.claude-haiku-4-5-20251001-v1:0"
+HAIKU_MODEL_ID = os.environ.get("ROUTER_MODEL_ID", "us.anthropic.claude-haiku-4-5-20251001-v1:0")
 
 # S3 konfiguracija — postavlja se u Lambda env varijablama
 S3_BUCKET = os.environ.get("BAZA_S3_BUCKET")
@@ -171,14 +171,30 @@ def _load_entries(
     s3_bucket: Optional[str] = None,
     s3_key: Optional[str] = None,
 ) -> list[dict]:
-    """Učitaj unose iz S3 (Lambda) ili lokalnog fajla (CLI)."""
+    """Učitaj unose iz S3 (Lambda) ili lokalnog fajla (CLI).
+    Na prvom pokretanju (S3 prazan), bootstrapira S3 iz bundlanog baza.json.
+    """
     bucket = s3_bucket or S3_BUCKET
     if bucket:
         key = s3_key or S3_KEY
-        print(f"Učitavam bazu iz S3: s3://{bucket}/{key}")
         s3 = boto3.client("s3")
-        obj = s3.get_object(Bucket=bucket, Key=key)
-        return json.loads(obj["Body"].read().decode("utf-8"))
+        try:
+            print(f"Učitavam bazu iz S3: s3://{bucket}/{key}")
+            obj = s3.get_object(Bucket=bucket, Key=key)
+            return json.loads(obj["Body"].read().decode("utf-8"))
+        except s3.exceptions.NoSuchKey:
+            print("S3 baza ne postoji — bootstrapiram iz bundlanog fajla...")
+            path = local_path or DEFAULT_BAZA
+            with Path(path).open(encoding="utf-8") as f:
+                entries = json.load(f)
+            s3.put_object(
+                Bucket=bucket,
+                Key=key,
+                Body=json.dumps(entries, ensure_ascii=False, indent=2).encode("utf-8"),
+                ContentType="application/json",
+            )
+            print(f"Bootstrap gotov: {len(entries)} unosa uploadano na s3://{bucket}/{key}")
+            return entries
 
     path = local_path or DEFAULT_BAZA
     print(f"Učitavam bazu iz lokalnog fajla: {path}")

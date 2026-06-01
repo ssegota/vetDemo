@@ -20,13 +20,15 @@ export const generateReport = defineFunction(
 
     const fn = new Function(scope, 'GenerateReportPython', {
       runtime: Runtime.PYTHON_3_12,
-      handler: 'handler.lambda_handler',
+      handler: 'orchestrator.lambda_handler',
       code: Code.fromAsset(path.resolve(__dirname)),
       timeout: Duration.seconds(60),
       environment: {
         BAZA_S3_BUCKET: bazaBucket.bucketName,
         BAZA_S3_KEY: 'semantic-router/baza.json',
         BEDROCK_REGION: 'us-east-1',
+        ROUTER_MODEL_ID: 'us.anthropic.claude-haiku-4-5-20251001-v1:0',
+        GENERATOR_MODEL_ID: 'us.anthropic.claude-sonnet-4-6-20250514-v1:0',
       },
     });
 

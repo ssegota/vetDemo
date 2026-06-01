@@ -187,7 +187,7 @@ def lambda_handler(event, context):
     AWS Lambda entry point — kompatibilan s postojećim AppSync/Amplify setupom.
 
     Ulaz (AppSync mutation):  event.arguments.keywords = ["kw1", "kw2", ...]
-    Izlaz: JSON string {"opis": "...", "dg": "...", "source": "router"|"sonnet"}
+    Izlaz: JSON string {"opis": "...", "dg": "...", "source": "router"|"sonnet", "v": "2"}
     """
     keywords: list[str] = []
     if "arguments" in event:
@@ -203,6 +203,6 @@ def lambda_handler(event, context):
     result = _get_orchestrator().query(keywords)
 
     return json.dumps(
-        {"opis": result["opis"], "dg": result["dg"], "source": result["source"]},
+        {"opis": result["opis"], "dg": result["dg"], "source": result["source"], "v": "2"},
         ensure_ascii=False,
     )

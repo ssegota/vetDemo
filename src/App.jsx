@@ -106,28 +106,16 @@ function GeneratorContent({ signOut, user }) {
         console.error('GraphQL errors:', errors);
         setReport("Error generating report: " + errors[0].message);
       } else {
-        // Clean up: if data is a technical string representation of a result object, parse it
         let cleanReport = data;
         if (typeof data === 'string') {
-          // Handle the weird python dictionary string format: {statusCode=200, headers={...}, body={"report": "..."}}
-          if (data.includes('body={"report":') || data.includes("body={'report':")) {
-            try {
-              // Extract everything from {"report": ...} to the end (excluding the closing brace of the main object if possible)
-              const bodyMatch = data.match(/body=(\{"report":\s*[\s\S]*?\})\s*\}$/);
-              if (bodyMatch && bodyMatch[1]) {
-                const parsedBody = JSON.parse(bodyMatch[1]);
-                cleanReport = parsedBody.report || parsedBody.body || data;
-              } else {
-                 // Fallback regex if it's deeply nested
-                 const directMatch = data.match(/"report":\s*"(.*)"\s*\}/s);
-                 if (directMatch && directMatch[1]) {
-                   // Replace escaped newlines
-                   cleanReport = directMatch[1].replace(/\\n/g, '\n').replace(/\\"/g, '"');
-                 }
-              }
-            } catch (e) {
-              console.warn('Failed to parse complex report data string format, using fallback.');
+          try {
+            const parsed = JSON.parse(data);
+            if (parsed.opis || parsed.dg) {
+              const sourceLabel = parsed.source === 'router' ? '📚 Pronađeno u bazi' : '🤖 Generirano (Sonnet)';
+              cleanReport = `${sourceLabel}\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\nOPIS:\n${parsed.opis || ''}\n\nDIJAGNOZA:\n${parsed.dg || ''}`;
             }
+          } catch (e) {
+            // nije JSON, prikaži sirovo
           }
         }
         setReport(cleanReport || "No report generated.");

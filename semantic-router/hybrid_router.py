@@ -70,10 +70,12 @@ def tokenize(text: str) -> list[str]:
 
 def _doc_text(entry: dict) -> str:
     parts: list[str] = []
-    for field in ("keywords", "keywords_original", "dg"):
-        val = (entry.get(field) or "").strip()
-        if val:
-            parts.append(val)
+    kw = (entry.get("keywords") or "").strip()
+    if kw:
+        parts.append(kw)
+    dg = (entry.get("dg") or "").strip()
+    if dg:
+        parts.append(dg)
     return " ".join(parts)
 
 

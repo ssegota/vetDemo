@@ -106,7 +106,31 @@ function GeneratorContent({ signOut, user }) {
         console.error('GraphQL errors:', errors);
         setReport("Error generating report: " + errors[0].message);
       } else {
-        setReport(parseReportData(data) || "No report generated.");
+        // Clean up: if data is a technical string representation of a result object, parse it
+        let cleanReport = data;
+        if (typeof data === 'string') {
+          // Handle the weird python dictionary string format: {statusCode=200, headers={...}, body={"report": "..."}}
+          if (data.includes('body={"report":') || data.includes("body={'report':")) {
+            try {
+              // Extract everything from {"report": ...} to the end (excluding the closing brace of the main object if possible)
+              const bodyMatch = data.match(/body=(\{"report":\s*[\s\S]*?\})\s*\}$/);
+              if (bodyMatch && bodyMatch[1]) {
+                const parsedBody = JSON.parse(bodyMatch[1]);
+                cleanReport = parsedBody.report || parsedBody.body || data;
+              } else {
+                 // Fallback regex if it's deeply nested
+                 const directMatch = data.match(/"report":\s*"(.*)"\s*\}/s);
+                 if (directMatch && directMatch[1]) {
+                   // Replace escaped newlines
+                   cleanReport = directMatch[1].replace(/\\n/g, '\n').replace(/\\"/g, '"');
+                 }
+              }
+            } catch (e) {
+              console.warn('Failed to parse complex report data string format, using fallback.');
+            }
+          }
+        }
+        setReport(cleanReport || "No report generated.");
       }
     } catch (error) {
       console.error('Error calling generateReport:', error);
@@ -586,26 +610,6 @@ function GeneratorContent({ signOut, user }) {
       </footer>
     </div>
   );
-}
-
-function parseReportData(data) {
-  if (!data || typeof data !== 'string') return data;
-
-  // Strip markdown code fences (```json ... ``` or ``` ... ```)
-  let text = data.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/, '').trim();
-
-  // Try parsing as JSON (orchestrator format: {opis, dg, source} or old {opis, dg})
-  try {
-    const parsed = JSON.parse(text);
-    if (parsed.opis || parsed.dg) {
-      let result = '';
-      if (parsed.opis) result += parsed.opis;
-      if (parsed.dg) result += (result ? '\n\nDg.: ' : 'Dg.: ') + parsed.dg;
-      return result;
-    }
-  } catch {}
-
-  return text;
 }
 
 export default function App() {

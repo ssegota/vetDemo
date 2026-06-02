@@ -67,24 +67,24 @@ class Orchestrator:
         self.retriever: HybridRetriever = build_hybrid(self.local_path)
         self.bedrock = boto3.client("bedrock-runtime", region_name=BEDROCK_REGION)
 
-    def query(self, keywords: list[str], k: int = 1) -> dict:
+    def query(self, keywords: list[str], k: int = 3) -> dict:
         """
-        Vrati dijagnozu i opis za zadane ključne riječi.
+        Vrati top-k rezultata iz routera ili jedan Sonnet-generirani nalaz.
 
         Returns:
             {
-                "dg":     str,
-                "opis":   str,
-                "source": "router" | "sonnet",
-                "match":  dict | None
+                "source":  "router" | "sonnet",
+                "results": [{"dg": str, "opis": str}, ...]
             }
         """
         query_text = ", ".join(kw.strip() for kw in keywords if kw.strip())
-        results = self.retriever.query(query_text, k=k)
+        matches = self.retriever.query(query_text, k=k)
 
-        if results:
-            best = results[0]
-            return {"dg": best["dg"], "opis": best["opis"], "source": "router", "match": best}
+        if matches:
+            return {
+                "source": "router",
+                "results": [{"dg": m["dg"], "opis": m["opis"]} for m in matches],
+            }
 
         print("[orchestrator] Router nije pronašao podudaranje — pozivam Sonnet...")
         dg, opis = self._call_sonnet(keywords)
@@ -93,7 +93,7 @@ class Orchestrator:
         self.retriever.add_entry(new_entry)
         print(f"[orchestrator] Novi unos zapisan u bazu: id={new_entry['id']}")
 
-        return {"dg": dg, "opis": opis, "source": "sonnet", "match": None}
+        return {"source": "sonnet", "results": [{"dg": dg, "opis": opis}]}
 
     def _call_sonnet(self, keywords: list[str]) -> tuple[str, str]:
         kw_str = ", ".join(kw.strip() for kw in keywords if kw.strip())
@@ -203,7 +203,4 @@ def lambda_handler(event, context):
 
     result = _get_orchestrator().query(keywords)
 
-    return json.dumps(
-        {"opis": result["opis"], "dg": result["dg"], "source": result["source"]},
-        ensure_ascii=False,
-    )
+    return json.dumps(result, ensure_ascii=False)

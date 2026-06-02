@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import uuid
 from pathlib import Path
 from typing import Optional
@@ -118,7 +119,10 @@ class Orchestrator:
             accept="application/json",
         )
         text = json.loads(resp["body"].read())["content"][0]["text"].strip()
-        parsed = json.loads(text)
+        match = re.search(r"\{.*\}", text, re.DOTALL)
+        if not match:
+            raise ValueError(f"Model nije vratio valjan JSON: {text[:200]}")
+        parsed = json.loads(match.group())
         return parsed["dg"], parsed["opis"]
 
     def _write_back(self, keywords: list[str], dg: str, opis: str) -> dict:

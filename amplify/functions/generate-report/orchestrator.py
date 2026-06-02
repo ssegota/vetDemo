@@ -33,7 +33,7 @@ from hybrid_router import (
     get_retriever,
 )
 
-SONNET_MODEL_ID = "us.anthropic.claude-haiku-4-5-20251001-v1:0"
+SONNET_MODEL_ID = os.environ.get("SONNET_MODEL_ID", "us.anthropic.claude-haiku-4-5-20251001-v1:0")
 
 SYSTEM_PROMPT = """
 Ti si iskusan veterinarski patolog koji piše histopatološke i citološke nalaze na hrvatskom jeziku. Tvoj zadatak je iz zadane liste ključnih riječi (lematizirani medicinski pojmovi izvučeni iz originalnog nalaza) rekonstruirati:

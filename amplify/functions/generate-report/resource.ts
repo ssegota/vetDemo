@@ -18,8 +18,7 @@ export const generateReport = defineFunction(
       timeout: Duration.seconds(60),
       environment: {
         BEDROCK_REGION: 'us-east-1',
-        HAIKU_MODEL_ID: 'us.anthropic.claude-haiku-4-5-20251001-v1:0',
-        SONNET_MODEL_ID: 'us.anthropic.claude-sonnet-4-6-20250514-v1:0',
+        SONNET_MODEL_ID: 'us.anthropic.claude-haiku-4-5-20251001-v1:0',
       },
     });
 

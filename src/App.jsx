@@ -38,6 +38,9 @@ function GeneratorContent({ signOut, user }) {
   const [report, setReport] = useState('');
   const [results, setResults] = useState([]);
   const [resultSource, setResultSource] = useState('');
+  const [selectedIdx, setSelectedIdx] = useState(null);
+  const [editedOpis, setEditedOpis] = useState('');
+  const [editedDg, setEditedDg] = useState('');
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [history, setHistory] = useState([]);
@@ -115,13 +118,31 @@ function GeneratorContent({ signOut, user }) {
             setResults(parsed.results);
             setResultSource(parsed.source || '');
             setReport('');
+            if (parsed.results.length === 1) {
+              setSelectedIdx(0);
+              setEditedOpis(parsed.results[0].opis || '');
+              setEditedDg(parsed.results[0].dg || '');
+            } else {
+              setSelectedIdx(null);
+              setEditedOpis('');
+              setEditedDg('');
+            }
+          } else if (parsed.opis || parsed.dg) {
+            setResults([{ opis: parsed.opis, dg: parsed.dg }]);
+            setResultSource(parsed.source || '');
+            setSelectedIdx(0);
+            setEditedOpis(parsed.opis || '');
+            setEditedDg(parsed.dg || '');
+            setReport('');
           } else {
             setReport(data || "No report generated.");
             setResults([]);
+            setSelectedIdx(null);
           }
         } catch (e) {
           setReport(data || "No report generated.");
           setResults([]);
+          setSelectedIdx(null);
         }
       }
     } catch (error) {
@@ -132,14 +153,27 @@ function GeneratorContent({ signOut, user }) {
     }
   };
 
+  const selectResult = (idx) => {
+    setSelectedIdx(idx);
+    setEditedOpis(results[idx].opis || '');
+    setEditedDg(results[idx].dg || '');
+  };
+
+  const activeReport = selectedIdx !== null
+    ? `OPIS:\n${editedOpis}\n\nDIJAGNOZA:\n${editedDg}`
+    : report;
+
   const saveToStorage = async () => {
-    if (!report) return;
+    if (!activeReport) {
+      alert('Odaberi nalaz za spremanje.');
+      return;
+    }
     setSaving(true);
     try {
       await client.models.Diagnosis.create({
         details: details,
         keywords: keywords.filter(k => k.trim() !== ''),
-        report: report
+        report: activeReport
       });
       alert('✅ Diagnosis successfully saved to your history!');
       fetchHistory(); // Refresh history if panel is open
@@ -165,6 +199,10 @@ function GeneratorContent({ signOut, user }) {
   };
 
   const downloadPDF = async () => {
+    if (!activeReport) {
+      alert('Odaberi nalaz za PDF.');
+      return;
+    }
     try {
       const date = new Date().toLocaleDateString();
       const doctorDisplayName = userProfile.firstName && userProfile.lastName 
@@ -223,11 +261,24 @@ function GeneratorContent({ signOut, user }) {
         `;
       }
       
+      if (selectedIdx !== null) {
+        htmlContent += `
+          <div style="margin-bottom: 25px;">
+            <p style="margin: 0 0 10px 0; font-weight: 700; font-size: 14px; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px;">Opis:</p>
+            <div style="margin: 0; font-size: 14px; line-height: 1.8; color: #1e293b; white-space: pre-wrap;">${editedOpis}</div>
+          </div>
+          <div style="margin-bottom: 25px;">
+            <p style="margin: 0 0 10px 0; font-weight: 700; font-size: 14px; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px;">Dijagnoza:</p>
+            <div style="margin: 0; font-size: 14px; font-weight: 600; color: #1e293b;">${editedDg}</div>
+          </div>`;
+      } else {
+        htmlContent += `
+          <div style="margin-bottom: 25px;">
+            <p style="margin: 0 0 10px 0; font-weight: 700; font-size: 14px; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px;">${t('narrative_report')}:</p>
+            <div style="margin: 0; font-size: 14px; line-height: 1.8; color: #1e293b; white-space: pre-wrap;">${report}</div>
+          </div>`;
+      }
       htmlContent += `
-        <div style="margin-bottom: 25px;">
-          <p style="margin: 0 0 10px 0; font-weight: 700; font-size: 14px; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px;">${t('narrative_report')}:</p>
-          <div style="margin: 0; font-size: 14px; line-height: 1.8; color: #1e293b; white-space: pre-wrap;">${report}</div>
-        </div>
         
         <div style="margin-top: 50px; padding-top: 20px; border-top: 1px solid #e2e8f0; text-align: center; color: #94a3b8; font-size: 10px;">
           ${t('footer_text')}
@@ -293,6 +344,9 @@ function GeneratorContent({ signOut, user }) {
     setReport('');
     setResults([]);
     setResultSource('');
+    setSelectedIdx(null);
+    setEditedOpis('');
+    setEditedDg('');
     setShowHistory(false);
     setShowProfile(false);
   };
@@ -300,7 +354,12 @@ function GeneratorContent({ signOut, user }) {
   const loadFromHistory = (item) => {
     setDetails(item.details || '');
     setKeywords(item.keywords || []);
-    setReport(item.report);
+    setResults([]);
+    setResultSource('');
+    setSelectedIdx(null);
+    setEditedOpis('');
+    setEditedDg('');
+    setReport(item.report || '');
     setShowHistory(false);
   };
 
@@ -475,7 +534,7 @@ function GeneratorContent({ signOut, user }) {
         </div>
       </header>
 
-      <main className={`main-content ${report ? 'with-report' : ''}`}>
+      <main className={`main-content ${(results.length > 0 || report) ? 'with-report' : ''}`}>
         <section className="card keyword-section">
           <h2>{t('clinical_input')}</h2>
           <p style={{ marginBottom: '1.5rem', color: 'var(--text-muted)' }}>
@@ -530,37 +589,82 @@ function GeneratorContent({ signOut, user }) {
                 {resultSource === 'router' ? `📚 ${results.length} rezultat${results.length > 1 ? 'a' : ''} iz baze` : '🤖 Generirano'}
               </h3>
               <div className="actions">
-                <button className="btn btn-secondary" onClick={downloadPDF} title={t('pdf_btn')}>
+                <button className="btn btn-secondary" onClick={downloadPDF} disabled={selectedIdx === null} title={t('pdf_btn')}>
                   <Download size={18} /> {t('pdf_btn')}
                 </button>
                 <button
                   className="btn btn-primary"
                   onClick={saveToStorage}
-                  disabled={saving}
+                  disabled={saving || selectedIdx === null}
                   title={t('save_btn')}
                 >
                   {saving ? <div className="loading-spinner"></div> : <><Save size={18} /> {t('save_btn')}</>}
                 </button>
               </div>
             </div>
+            {results.length > 1 && selectedIdx === null && (
+              <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>
+                Odaberi jedan nalaz za uređivanje, spremanje ili PDF izvoz.
+              </p>
+            )}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-              {results.map((r, i) => (
-                <div key={i} style={{ border: '1px solid var(--border)', borderRadius: '8px', padding: '1.25rem' }}>
-                  {results.length > 1 && (
-                    <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                      Nalaz {i + 1}
+              {results.map((r, i) => {
+                const isSelected = selectedIdx === i;
+                return (
+                  <div key={i} style={{
+                    border: `2px solid ${isSelected ? 'var(--primary)' : 'var(--border)'}`,
+                    borderRadius: '8px',
+                    padding: '1.25rem',
+                    opacity: selectedIdx !== null && !isSelected ? 0.5 : 1,
+                    transition: 'all 0.15s',
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
+                      {results.length > 1 && (
+                        <div style={{ fontSize: '0.75rem', fontWeight: 700, color: isSelected ? 'var(--primary)' : 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                          Nalaz {i + 1}
+                        </div>
+                      )}
+                      <div style={{ marginLeft: 'auto' }}>
+                        {isSelected ? (
+                          <button className="btn btn-secondary btn-sm" onClick={() => { setSelectedIdx(null); setEditedOpis(''); setEditedDg(''); }}>
+                            Poništi odabir
+                          </button>
+                        ) : (
+                          <button className="btn btn-primary btn-sm" onClick={() => selectResult(i)}>
+                            Odaberi
+                          </button>
+                        )}
+                      </div>
                     </div>
-                  )}
-                  <div style={{ marginBottom: '1rem' }}>
-                    <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '0.4rem', textTransform: 'uppercase' }}>Opis</div>
-                    <p style={{ margin: 0, lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>{r.opis}</p>
+
+                    <div style={{ marginBottom: '1rem' }}>
+                      <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '0.4rem', textTransform: 'uppercase' }}>Opis</div>
+                      {isSelected ? (
+                        <textarea
+                          value={editedOpis}
+                          onChange={(e) => setEditedOpis(e.target.value)}
+                          style={{ width: '100%', minHeight: '140px', resize: 'vertical', lineHeight: 1.7, padding: '0.5rem', borderRadius: '6px', border: '1px solid var(--border)', fontFamily: 'inherit', fontSize: '0.95rem' }}
+                        />
+                      ) : (
+                        <p style={{ margin: 0, lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>{r.opis}</p>
+                      )}
+                    </div>
+
+                    <div style={{ borderTop: '1px solid var(--border)', paddingTop: '0.75rem' }}>
+                      <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '0.4rem', textTransform: 'uppercase' }}>Dijagnoza</div>
+                      {isSelected ? (
+                        <input
+                          value={editedDg}
+                          onChange={(e) => setEditedDg(e.target.value)}
+                          style={{ width: '100%', padding: '0.5rem', borderRadius: '6px', border: '1px solid var(--border)', fontFamily: 'inherit', fontSize: '0.95rem', fontWeight: 600 }}
+                        />
+                      ) : (
+                        <p style={{ margin: 0, fontWeight: 600 }}>{r.dg}</p>
+                      )}
+                    </div>
                   </div>
-                  <div style={{ borderTop: '1px solid var(--border)', paddingTop: '0.75rem' }}>
-                    <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '0.4rem', textTransform: 'uppercase' }}>Dijagnoza</div>
-                    <p style={{ margin: 0, fontWeight: 600 }}>{r.dg}</p>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </section>
         )}
